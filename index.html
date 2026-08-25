@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070713" />
+    <meta name="description" content="빛을 먹고 성장해, 과거의 나를 흡수하는 시간 루프 게임." />
+    <title>EAT YOUR ECHO</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game" aria-label="EAT YOUR ECHO 게임 화면"></canvas>
+      <div class="scanlines" aria-hidden="true"></div>
+      <header class="hud" aria-live="polite">
+        <div class="brand"><span class="brand-kicker">TIME LOOP SURVIVAL</span><strong>EAT YOUR<br />ECHO</strong></div>
+        <div class="hud-center"><span class="label">SURVIVE</span><strong id="timer">01:15</strong><div class="timer-line"><i id="timer-fill"></i></div></div>
+        <div class="score-block"><span class="label">SCORE</span><strong id="score">000000</strong><span id="combo">×1 COMBO</span></div>
+      </header>
+      <div class="loop-alert" id="loop-alert" aria-live="assertive"><span>NEXT ECHO</span><strong id="loop-count">08.0</strong></div>
+      <section class="overlay show" id="start-screen">
+        <div class="panel intro-panel">
+          <p class="eyebrow">08 SECONDS AGO, YOU WERE SOMEONE ELSE.</p>
+          <h1>내 잔상을<br /><em>먹어라.</em></h1>
+          <p class="intro-copy">빛을 먹어 현재의 나를 키우세요.<br />8초마다 과거의 내가 되살아납니다.</p>
+          <div class="rule-grid">
+            <div><b class="cyan">01</b><span>빛을 먹어<br />성장</span></div>
+            <div><b class="pink">02</b><span>작은 잔상은<br />흡수</span></div>
+            <div><b class="danger">03</b><span>큰 과거는<br />회피</span></div>
+          </div>
+          <button class="primary" id="start-button">루프 시작 <span>↗</span></button>
+          <p class="control-note">마우스 또는 손가락으로 이동</p>
+        </div>
+      </section>
+      <section class="overlay" id="end-screen">
+        <div class="panel result-panel">
+          <p class="eyebrow" id="result-kicker">LOOP TERMINATED</p>
+          <h2 id="result-title">과거에<br /><em>삼켜졌습니다.</em></h2>
+          <div class="result-stats"><div><span>SCORE</span><strong id="final-score">000000</strong></div><div><span>BEST</span><strong id="best-score">000000</strong></div><div><span>ECHOES</span><strong id="echoes-eaten">0</strong></div></div>
+          <p id="result-message" class="result-message"></p>
+          <button class="primary" id="restart-button">다시 루프 <span>↻</span></button>
+          <button class="text-button" id="share-button">결과 복사하기</button>
+        </div>
+      </section>
+      <button class="sound-button" id="sound-button" aria-label="소리 켜기">◌</button>
+      <p class="hint" id="hint">빛을 향해 움직이세요</p>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
