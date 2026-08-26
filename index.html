@@ -1,37 +1,10 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#070713" />
-    <title>8초 전의 나</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <main id="game-shell">
-      <canvas id="game" aria-label="8초 전의 나 퍼즐 게임"></canvas>
-      <div class="scanlines" aria-hidden="true"></div>
-      <header class="hud">
-        <div class="brand"><span>PAST SELF PUZZLE</span><strong>8초 전의 나</strong></div>
-        <div class="stage"><span id="stage-label">STAGE 01</span><strong id="stage-name">첫 번째 기록</strong></div>
-        <div class="progress"><span id="crystal-count">0 / 1</span><small>MEMORIES</small></div>
-      </header>
-      <div id="phase" class="phase"><span id="phase-label">RECORD PATH</span><strong id="phase-time">04.0</strong><i><b id="phase-fill"></b></i></div>
-      <p id="instruction" class="instruction"></p>
-      <section id="start-screen" class="overlay show">
-        <div class="panel">
-          <p class="eyebrow">A PUZZLE FOR YOUR PAST SELF</p>
-          <h1>체스판에서<br /><em>살아남으세요.</em></h1>
-          <div class="steps"><div><b>01</b><span>청록색 현재의 나를<br />움직이세요</span></div><div><b>02</b><span>보라색 과거의 나가<br />4초 뒤따라옵니다</span></div><div><b>03</b><span>과거가 스위치를 밟을 때<br />열린 문을 통과하세요</span></div></div>
-          <button id="start-button" class="primary">던전 입장 <span>↗</span></button>
-          <p class="control-note">마우스 또는 손가락으로 이동 · 현재와 과거는 서로 다른 일을 합니다</p>
-        </div>
-      </section>
-      <section id="result-screen" class="overlay">
-        <div class="panel result"><p class="eyebrow">MEMORY RESTORED</p><h2>모든 길을<br /><em>기억했습니다.</em></h2><p>과거의 나는 이제 당신이 남긴 모든 길을 따라갈 수 있어요.</p><button id="restart-button" class="primary">처음부터 다시 <span>↻</span></button></div>
-      </section>
-      <button id="retry-button" class="retry" hidden>↻ 다시 기록</button>
-    </main>
-    <script src="game.js"></script>
-  </body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#08091a"><title>CHECKBEAT — rhythm chess survival</title><link rel="stylesheet" href="style.css"></head>
+<body><main id="app"><canvas id="game"></canvas>
+<header class="hud"><div class="brand"><span>CHECK</span>BEAT<small>RHYTHM CHESS SURVIVAL</small></div><div class="turn"><span id="phaseLabel">ENEMY BEAT</span><strong id="beatText">READY</strong></div><div class="stats"><span>HP <b id="hp">5</b></span><span>XP <b id="xp">0 / 3</b></span></div></header>
+<div class="hint" id="hint">적 말이 움직인 직후, 빛나는 칸 하나를 선택하세요.</div><div class="meter"><i id="meterFill"></i></div>
+<section class="overlay" id="startScreen"><div class="panel intro"><p class="eyebrow">ONE MOVE · ONE BEAT · SURVIVE</p><h1>CHECK<span>BEAT</span></h1><p>적 말들은 박자마다 함께 다가옵니다.<br>당신은 한 박자에 단 한 번, 체스 말처럼 움직입니다.</p><p class="rules">적을 잡아 XP를 모으고, 더 강한 말로 <em>승진</em>하세요.<br>마지막 칸은 없습니다.</p><button id="startButton">게임 시작 <b>↗</b></button></div></section>
+<section class="overlay hidden" id="upgradeScreen"><div class="panel upgrade"><p class="eyebrow">PROMOTION AVAILABLE</p><h2>어떤 말이 될까요?</h2><div class="choices"><button data-piece="knight"><b>♞</b><strong>KNIGHT</strong><span>L자 이동 · 착지 충격파</span></button><button data-piece="rook"><b>♜</b><strong>ROOK</strong><span>직선 3칸 · 관통 섬광</span></button><button data-piece="bishop"><b>♝</b><strong>BISHOP</strong><span>대각선 3칸 · 대각 폭발</span></button></div></div></section>
+<section class="overlay hidden" id="gameOverScreen"><div class="panel intro"><p class="eyebrow">CHECKMATE</p><h2>THE BOARD REMEMBERS.</h2><p id="resultText"></p><button id="restartButton">다시 도전 <b>↻</b></button></div></section>
+</main><script src="game.js"></script></body></html>
