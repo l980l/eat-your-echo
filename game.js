@@ -580,7 +580,7 @@
       p.xp >= 3 + p.rank * 2 &&
       (p.rank === 0 || reroll || p.traits.length < TRAITS.length)
     ) {
-      openUpgrade();
+      openUpgrade(true);
       return;
     }
     if (gained) {
@@ -600,7 +600,7 @@
   function chooseRandom(list, n) {
     return [...list].sort(() => Math.random() - 0.5).slice(0, n);
   }
-  function openUpgrade() {
+  function openUpgrade(continueTurn = false) {
     let p = S.player,
       pieces = ["knight", "bishop", "rook", "queen", "king"],
       reroll = p.rank > 0 && (p.rank + 1) % 5 === 0;
@@ -625,6 +625,7 @@
       renderChoices();
     }
     S.phase = "upgrade";
+    S.upgradeContinueTurn = continueTurn;
     S.upgradeLock = performance.now() + 550;
     ui.upgrade.classList.remove("hidden");
     ui.hint.textContent = "레벨업 보상을 선택하세요.";
@@ -668,14 +669,23 @@
     moves();
     hud();
     ui.upgrade.classList.add("hidden");
-    S.phase = "enemy";
+    let continueTurn = S.upgradeContinueTurn;
+    S.upgradeContinueTurn = false;
+    S.phase = continueTurn ? "player" : "enemy";
     S.elapsed = 0;
-    ui.phase.textContent = "ENEMY BEAT";
-    ui.beat.textContent = "CHARGING";
+    if (continueTurn) {
+      S.chain++;
+      S.flash = 1;
+      ui.phase.textContent = "YOUR MOVE";
+      ui.beat.textContent = "MOVE NOW";
+    } else {
+      ui.phase.textContent = "ENEMY BEAT";
+      ui.beat.textContent = "CHARGING";
+    }
     ui.hint.textContent =
       S.upgradeMode === "piece"
-        ? p.piece.toUpperCase() + "으로 승진했습니다."
-        : "특성 " + o.name + "을 획득했습니다.";
+        ? p.piece.toUpperCase() + (continueTurn ? "으로 승진! 한 번 더 움직이세요." : "으로 승진했습니다.")
+        : "특성 " + o.name + (continueTurn ? " 획득! 한 번 더 움직이세요." : "을 획득했습니다.");
     burst(p.x, p.y, "#f45cf4", 34);
     sfx("upgrade");
   }
