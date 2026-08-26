@@ -87,12 +87,16 @@
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
     COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
-    knightCorner = (a, b) =>
-      Math.abs(a.x - b.x) === 2 && Math.abs(a.y - b.y) === 1
-        ? Math.abs(a.x - b.x) > Math.abs(a.y - b.y)
+    knightCorner = (a, b) => {
+      let dx = Math.abs(a.x - b.x),
+        dy = Math.abs(a.y - b.y),
+        isL = (dx === 1 && (dy === 2 || dy === 3)) || (dy === 1 && (dx === 2 || dx === 3));
+      return isL
+        ? dx > dy
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
+    };
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
     LEADERBOARD_LIMIT = 10;
@@ -365,7 +369,7 @@
       id: "longStride",
       icon: "↔",
       name: "LONG STRIDE",
-      desc: "직선·대각 이동 거리 +2",
+      desc: "킹·폰 3칸 / 나이트 확장 L자 / 슬라이딩 말 +2칸",
     },
     {
       id: "royalStep",
@@ -469,8 +473,12 @@
         [-1, -1],
       ],
       base;
-    if (piece === "pawn" || piece === "king") base = king;
-    else if (piece === "knight")
+    let longStride = p.traits?.includes("longStride");
+    if (piece === "pawn" || piece === "king")
+      base = longStride
+        ? king.flatMap(([x, y]) => [[x, y], [x * 2, y * 2], [x * 3, y * 3]])
+        : king;
+    else if (piece === "knight") {
       base = [
         [1, 2],
         [2, 1],
@@ -481,6 +489,12 @@
         [-2, 1],
         [-1, 2],
       ];
+      if (longStride)
+        base.push(
+          [1, 3], [3, 1], [3, -1], [1, -3],
+          [-1, -3], [-3, -1], [-3, 1], [-1, 3],
+        );
+    }
     else {
       let b =
         piece === "bishop"
@@ -498,7 +512,7 @@
                 [0, 1],
                 [0, -1],
               ],
-        range = p.traits?.includes("longStride") ? 5 : 3;
+        range = longStride ? 5 : 3;
       base = b.flatMap(([x, y]) =>
         Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
