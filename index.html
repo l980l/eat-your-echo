@@ -288,6 +288,72 @@
       font-size: 9px;
       backdrop-filter: blur(3px);
     }
+    #rankingButton {
+      position: absolute;
+      z-index: 2;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      margin: 0;
+      padding: 9px 12px;
+      border-color: #53f0e4aa;
+      background: #090a1888;
+      color: #53f0e4;
+      box-shadow: none;
+      font-size: 11px;
+      backdrop-filter: blur(3px);
+    }
+    .leaderboard-panel {
+      max-width: 680px;
+      max-height: min(84dvh, 760px);
+      overflow: auto;
+      text-align: left;
+    }
+    .leaderboard-panel h2 { text-align: center; margin-bottom: 8px; }
+    .leaderboard-note { margin: 0 0 18px; text-align: center; font-size: 13px; }
+    .leaderboard-list { display: grid; gap: 7px; }
+    .leaderboard-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid #ffffff20;
+      background: #10132bd9;
+    }
+    .leaderboard-rank { color: #ffd166; font: 700 15px monospace; }
+    .leaderboard-name { overflow: hidden; color: #f2f5ff; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .leaderboard-message { grid-column: 2 / -1; margin-top: -5px; color: #bfc5df; font-size: 12px; line-height: 1.4; word-break: break-word; }
+    .leaderboard-score { color: #53f0e4; font: 700 16px monospace; }
+    .leaderboard-empty { padding: 30px 0; color: #aeb4ce; text-align: center; }
+    .score-submit { margin-top: 20px; padding-top: 18px; border-top: 1px solid #53f0e455; }
+    .score-submit.hidden { display: none; }
+    .score-submit h3 { margin: 0 0 8px; color: #53f0e4; font-size: 20px; }
+    .score-submit p { margin: 0 0 12px; font-size: 13px; }
+    .score-submit input, .score-submit textarea {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 11px;
+      border: 1px solid #ffffff44;
+      border-radius: 0;
+      outline: none;
+      background: #090b1e;
+      color: #f3f6ff;
+      font: 15px "Gowun Batang", serif;
+    }
+    .score-submit input:focus, .score-submit textarea:focus { border-color: #53f0e4; box-shadow: 0 0 16px #53f0e433; }
+    .score-submit textarea { min-height: 66px; resize: vertical; }
+    .score-submit button { margin: 3px 0 0; }
+    .score-status { min-height: 1.4em; margin: 10px 0 0; color: #ffd166; font-size: 12px; }
+    .leaderboard-actions { display: flex; justify-content: center; gap: 9px; }
+    .leaderboard-actions button { margin-top: 18px; }
+    .secondary-button { border-color: #ffffff44; background: #171a32; color: #dce3ff; box-shadow: none; }
+    @media (max-width: 560px) {
+      #rankingButton { right: 10px; bottom: 10px; font-size: 9px; }
+      .leaderboard-panel { width: min(94vw, 630px); padding: 24px 16px; }
+      .leaderboard-row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 9px; }
+      .leaderboard-message { font-size: 11px; }
+    }
     #comboToast {
       position: absolute;
       z-index: 7;
@@ -383,7 +449,8 @@
       <section class="overlay" id="startScreen">
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
-        ><button class="start-button" id="startButton">IT'S MY TURN <b>↗</b></button>
+        ><button class="start-button" id="startButton">IT'S MY TURN <b>↗</b></button
+        ><button id="rankingButton">GLOBAL RANKING</button>
       </section>
       <section class="overlay hidden" id="upgradeScreen">
         <div class="panel upgrade">
@@ -415,7 +482,26 @@
           <p class="eyebrow">CHECKMATE</p>
           <h2>THE BOARD REMEMBERS.</h2>
           <p id="resultText"></p>
+          <div class="score-submit hidden" id="scoreSubmit">
+            <h3>TOP 10 달성!</h3>
+            <p>이 기록을 남기고 한 줄 소감을 적어주세요.</p>
+            <input id="scoreName" maxlength="16" placeholder="이름 또는 닉네임 (최대 16자)" autocomplete="nickname" />
+            <textarea id="scoreMessage" maxlength="120" placeholder="한 줄 소감 (선택, 최대 120자)"></textarea>
+            <button id="submitScoreButton">랭킹에 기록 <b>↗</b></button>
+          </div>
+          <p class="score-status" id="scoreStatus"></p>
           <button id="restartButton">다시 도전 <b>↻</b></button>
+        </div>
+      </section>
+      <section class="overlay hidden" id="rankingScreen">
+        <div class="panel leaderboard-panel">
+          <p class="eyebrow">GLOBAL LEADERBOARD</p>
+          <h2>THE BOARD REMEMBERS.</h2>
+          <p class="leaderboard-note" id="leaderboardStatus">기록을 불러오는 중…</p>
+          <div class="leaderboard-list" id="leaderboardList"></div>
+          <div class="leaderboard-actions">
+            <button class="secondary-button" id="rankingClose">닫기</button>
+          </div>
         </div>
       </section>
     </main>

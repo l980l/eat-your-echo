@@ -27,6 +27,16 @@
       volumeRange: $("#volumeRange"),
       volumeValue: $("#volumeValue"),
       combo: $("#comboToast"),
+      ranking: $("#rankingScreen"),
+      rankingButton: $("#rankingButton"),
+      rankingClose: $("#rankingClose"),
+      leaderboardList: $("#leaderboardList"),
+      leaderboardStatus: $("#leaderboardStatus"),
+      scoreSubmit: $("#scoreSubmit"),
+      scoreName: $("#scoreName"),
+      scoreMessage: $("#scoreMessage"),
+      scoreButton: $("#submitScoreButton"),
+      scoreStatus: $("#scoreStatus"),
     },
     glyph = {
       pawn: "♟",
@@ -79,6 +89,133 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
+  const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
+    SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
+    LEADERBOARD_LIMIT = 10;
+  let leaderboardRows = [];
+  async function leaderboardRequest(path, options = {}) {
+    let response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
+      ...options,
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+    if (!response.ok) {
+      let body = await response.text();
+      throw new Error(body || "랭킹 서버에 연결할 수 없습니다.");
+    }
+    return response.status === 204 ? null : response.json();
+  }
+  function renderLeaderboard(rows) {
+    ui.leaderboardList.textContent = "";
+    if (!rows.length) {
+      let empty = document.createElement("p");
+      empty.className = "leaderboard-empty";
+      empty.textContent = "첫 번째 기록을 남겨보세요.";
+      ui.leaderboardList.appendChild(empty);
+      return;
+    }
+    rows.forEach((row, index) => {
+      let item = document.createElement("div"),
+        rank = document.createElement("span"),
+        name = document.createElement("strong"),
+        score = document.createElement("span");
+      item.className = "leaderboard-row";
+      rank.className = "leaderboard-rank";
+      name.className = "leaderboard-name";
+      score.className = "leaderboard-score";
+      rank.textContent = String(index + 1).padStart(2, "0");
+      name.textContent = row.name;
+      score.textContent = row.score + " KILLS";
+      item.append(rank, name, score);
+      if (row.message) {
+        let message = document.createElement("span");
+        message.className = "leaderboard-message";
+        message.textContent = row.message;
+        item.appendChild(message);
+      }
+      ui.leaderboardList.appendChild(item);
+    });
+  }
+  async function loadLeaderboard() {
+    ui.leaderboardStatus.textContent = "기록을 불러오는 중…";
+    try {
+      leaderboardRows = await leaderboardRequest(
+        "leaderboard?select=name,score,message,created_at&order=score.desc,created_at.asc&limit=" + LEADERBOARD_LIMIT,
+      );
+      renderLeaderboard(leaderboardRows);
+      ui.leaderboardStatus.textContent = "TOP 10 · 처치 수 기준";
+      return leaderboardRows;
+    } catch (error) {
+      ui.leaderboardList.textContent = "";
+      ui.leaderboardStatus.textContent = "랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+      throw error;
+    }
+  }
+  function isTopTenScore(score, rows = leaderboardRows) {
+    return score > 0 && (rows.length < LEADERBOARD_LIMIT || score > rows[rows.length - 1].score);
+  }
+  async function openRanking() {
+    ui.ranking.classList.remove("hidden");
+    try {
+      await loadLeaderboard();
+    } catch (_) {}
+  }
+  function closeRanking() {
+    ui.ranking.classList.add("hidden");
+  }
+  async function offerScoreSubmission(score) {
+    ui.scoreSubmit.classList.add("hidden");
+    ui.scoreStatus.textContent = "글로벌 랭킹을 확인하는 중…";
+    try {
+      let rows = await loadLeaderboard();
+      if (isTopTenScore(score, rows)) {
+        ui.scoreSubmit.classList.remove("hidden");
+        ui.scoreStatus.textContent = "현재 TOP 10 진입권입니다. 기록을 남겨주세요.";
+        ui.scoreName.focus();
+      } else {
+        ui.scoreStatus.textContent = "이번 기록은 TOP 10 밖입니다. 다시 도전해보세요.";
+      }
+    } catch (_) {
+      ui.scoreStatus.textContent = "랭킹 확인에 실패했습니다. 연결 후 다시 시도해주세요.";
+    }
+  }
+  async function submitScore() {
+    let name = ui.scoreName.value.trim(),
+      message = ui.scoreMessage.value.trim(),
+      score = S.finalScore;
+    if (!name) {
+      ui.scoreStatus.textContent = "닉네임을 입력해주세요.";
+      ui.scoreName.focus();
+      return;
+    }
+    if (!Number.isInteger(score) || score <= 0) return;
+    let lastSubmit = Number(localStorage.getItem("its-my-turn-last-score-submit") || 0);
+    if (Date.now() - lastSubmit < 15000) {
+      ui.scoreStatus.textContent = "기록 등록은 잠시 후 다시 시도해주세요.";
+      return;
+    }
+    ui.scoreButton.disabled = true;
+    ui.scoreStatus.textContent = "기록을 남기는 중…";
+    try {
+      await leaderboardRequest("leaderboard", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ name, score, message }),
+      });
+      localStorage.setItem("its-my-turn-last-score-submit", String(Date.now()));
+      ui.scoreSubmit.classList.add("hidden");
+      ui.scoreStatus.textContent = "기록을 남겼습니다! GLOBAL RANKING에서 확인하세요.";
+      loadLeaderboard().catch(() => {});
+    } catch (_) {
+      ui.scoreStatus.textContent = "기록 등록에 실패했습니다. 잠시 후 다시 시도해주세요.";
+    } finally {
+      ui.scoreButton.disabled = false;
+    }
+  }
   const savedVolumeRaw = localStorage.getItem("checkbeat-volume-v5");
   const savedVolume = savedVolumeRaw === null ? NaN : Number(savedVolumeRaw);
   const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(2, savedVolume / 50)) : 2 };
@@ -873,13 +1010,19 @@
   }
   function over() {
     S.running = false;
+    S.finalScore = S.kills;
     ui.result.textContent =
       "적 말이 당신을 잡았습니다. " +
       S.wave +
       "번의 박자 동안 " +
       S.kills +
       "개의 말을 제거했습니다.";
+    ui.scoreSubmit.classList.add("hidden");
+    ui.scoreName.value = localStorage.getItem("its-my-turn-ranking-name") || "";
+    ui.scoreMessage.value = "";
+    ui.scoreStatus.textContent = "";
     ui.over.classList.remove("hidden");
+    offerScoreSubmission(S.finalScore);
   }
   function size() {
     return Math.max(48, Math.min(76, Math.min(W, H) / 8.5));
@@ -1242,6 +1385,12 @@
     S.running = true;
     startBgm();
     ui.over.classList.add("hidden");
+  });
+  ui.rankingButton.addEventListener("click", openRanking);
+  ui.rankingClose.addEventListener("click", closeRanking);
+  ui.scoreButton.addEventListener("click", () => {
+    localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
+    submitScore();
   });
   $("#devXp").addEventListener("click", devXp);
   $("#devPawn").addEventListener("click", devPawn);
