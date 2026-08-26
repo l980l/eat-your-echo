@@ -72,6 +72,7 @@
     last = 0;
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
+    COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
     knightCorner = (a, b) =>
       Math.abs(a.x - b.x) === 2 && Math.abs(a.y - b.y) === 1
         ? Math.abs(a.x - b.x) > Math.abs(a.y - b.y)
@@ -216,6 +217,24 @@
       name: "ECHO BLADE",
       desc: "처치 시 이동 방향의 가장 가까운 적 관통",
     },
+    {
+      id: "fork",
+      icon: "♞",
+      name: "FORK",
+      desc: "처치 시 나이트 위치의 적도 타격",
+    },
+    {
+      id: "crossCheck",
+      icon: "✚",
+      name: "CROSS CHECK",
+      desc: "처치 시 상하좌우 가장 가까운 적 관통",
+    },
+    {
+      id: "slipstream",
+      icon: "〰",
+      name: "SLIPSTREAM",
+      desc: "매 적 턴 첫 비처치 이동 후 한 번 더 이동",
+    },
   ];
   function reset() {
     S.phase = "enemy";
@@ -229,7 +248,7 @@
     S.trail = [];
     S.enemyTrail = [];
     S.upgradeOptions = [];
-    S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [] };
+    S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false };
     S.enemies = [
       { x: 0, y: -6, type: "pawn", face: { x: 0, y: 1 } },
       { x: -2, y: -7, type: "pawn", face: { x: 0, y: 1 } },
@@ -243,7 +262,10 @@
   }
   function showCombo(chain) {
     clearTimeout(S.comboTimer);
+    let color = COMBO_COLORS[(chain - 1) % COMBO_COLORS.length];
     ui.combo.textContent = "CHAIN × " + chain;
+    ui.combo.style.color = color;
+    ui.combo.style.textShadow = "0 0 14px " + color + ", 0 0 32px " + color;
     ui.combo.classList.remove("show");
     void ui.combo.offsetWidth;
     ui.combo.classList.add("show");
@@ -321,19 +343,11 @@
   }
   function traitFx(type, x, y, extra = {}) {
     S.effects.push({ type, x, y, life: extra.life || 0.42, max: extra.life || 0.42, ...extra });
-    if (["shockwave", "magnet", "echo", "spark"].includes(type)) sfx(type);
+    if (["shockwave", "magnet", "echo", "spark", "fork", "cross"].includes(type))
+      sfx(type === "fork" || type === "cross" ? "echo" : type);
   }
   function captureBurst(x, y, combo) {
-    let colors = [
-        "#ff4d6d",
-        "#ff9f43",
-        "#ffd166",
-        "#6ee7b7",
-        "#53f0e4",
-        "#758bff",
-        "#d66efd",
-      ],
-      color = colors[(combo - 1) % 7];
+    let color = COMBO_COLORS[(combo - 1) % COMBO_COLORS.length];
     for (let i = 0; i < 26; i++) {
       let a = Math.random() * Math.PI * 2,
         v = 2.6 + Math.random() * 5.7;
@@ -478,6 +492,7 @@
     S.trail = [];
     S.enemyTrail = [];
     S.chain = 0;
+    S.player.slipUsed = false;
     sfx("enemy");
     let used = new Set(),
       captured = false;
@@ -599,6 +614,42 @@
       v.forEach((e) => captureBurst(e.x, e.y, combo));
       v.forEach((e) => traitFx("echo", p.x, p.y, { x2: e.x, y2: e.y }));
     }
+    if (gained && p.traits.includes("fork")) {
+      let v = S.enemies.filter((e) => {
+        let x = Math.abs(e.x - p.x),
+          y = Math.abs(e.y - p.y);
+        return (x === 1 && y === 2) || (x === 2 && y === 1);
+      });
+      S.enemies = S.enemies.filter((e) => !v.includes(e));
+      gained += v.length;
+      p.xp += v.length;
+      S.kills += v.length;
+      v.forEach((e) => {
+        captureBurst(e.x, e.y, combo);
+        traitFx("fork", p.x, p.y, { x2: e.x, y2: e.y, via: knightCorner(p, e) });
+      });
+    }
+    if (gained && p.traits.includes("crossCheck")) {
+      let v = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .map(([dx, dy]) =>
+          S.enemies
+            .filter((e) => {
+              let x = e.x - p.x,
+                y = e.y - p.y;
+              return dx ? y === 0 && x * dx > 0 : x === 0 && y * dy > 0;
+            })
+            .sort((a, b) => dist(a, p) - dist(b, p))[0],
+        )
+        .filter(Boolean);
+      S.enemies = S.enemies.filter((e) => !v.includes(e));
+      gained += v.length;
+      p.xp += v.length;
+      S.kills += v.length;
+      v.forEach((e) => {
+        captureBurst(e.x, e.y, combo);
+        traitFx("cross", p.x, p.y, { x2: e.x, y2: e.y });
+      });
+    }
     if (gained && p.traits.includes("chainSpark")) {
       p.xp++;
       traitFx("spark", p.x, p.y);
@@ -620,6 +671,13 @@
       moves();
       ui.hint.textContent =
         "연속 수 ×" + S.chain + "! 한 번 더 움직일 수 있습니다.";
+      return;
+    }
+    if (p.traits.includes("slipstream") && !p.slipUsed) {
+      p.slipUsed = true;
+      S.flash = 1;
+      moves();
+      traitFx("slip", p.x, p.y);
       return;
     }
     S.phase = "enemy";
@@ -837,16 +895,7 @@
       g.restore();
     }
     if (S.trail.length) {
-      let colors = [
-          "#ff4d6d",
-          "#ff9f43",
-          "#ffd166",
-          "#6ee7b7",
-          "#53f0e4",
-          "#758bff",
-          "#d66efd",
-        ],
-        col = S.chain ? colors[(S.chain - 1) % 7] : "#53f0e4";
+      let col = S.chain ? COMBO_COLORS[(S.chain - 1) % COMBO_COLORS.length] : "#53f0e4";
       g.save();
       g.strokeStyle = col;
       g.shadowColor = col;
@@ -920,15 +969,29 @@
           g.lineTo(q.x + Math.cos(a) * s * (0.25 + t * 0.7), q.y + Math.sin(a) * s * (0.25 + t * 0.7));
           g.stroke();
         }
-      } else if (f.type === "echo") {
+      } else if (["echo", "fork", "cross"].includes(f.type)) {
         let end = pos(f.x2, f.y2);
-        g.strokeStyle = "#ff8df5";
-        g.shadowColor = "#ff4dff";
+        let colors = f.type === "fork" ? ["#6ee7ff", "#4b8dff"] : f.type === "cross" ? ["#ffd166", "#ff9f43"] : ["#ff8df5", "#ff4dff"];
+        g.strokeStyle = colors[0];
+        g.shadowColor = colors[1];
         g.shadowBlur = 20;
         g.lineWidth = 5 * (1 - t) + 1;
         g.beginPath();
         g.moveTo(q.x, q.y);
+        if (f.via) {
+          let via = pos(f.via.x, f.via.y);
+          g.lineTo(via.x, via.y);
+        }
         g.lineTo(end.x, end.y);
+        g.stroke();
+      } else if (f.type === "slip") {
+        g.strokeStyle = "#53f0e4";
+        g.shadowColor = "#53f0e4";
+        g.shadowBlur = 16;
+        g.lineWidth = 2.5;
+        g.setLineDash([4, 5]);
+        g.beginPath();
+        g.arc(q.x, q.y, s * (0.34 + t * 1.2), 0, Math.PI * 2);
         g.stroke();
       }
       g.restore();
