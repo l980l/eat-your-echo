@@ -22,6 +22,10 @@
       devPick: $("#devPickScreen"),
       devPickTitle: $("#devPickTitle"),
       devPickOptions: $("#devPickOptions"),
+      soundToggle: $("#soundToggle"),
+      soundPanel: $("#soundPanel"),
+      volumeRange: $("#volumeRange"),
+      volumeValue: $("#volumeValue"),
     },
     glyph = {
       pawn: "♟",
@@ -73,13 +77,21 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
-  const audio = { ctx: null, master: null, timer: null, step: 0 };
+  const savedVolume = Number(localStorage.getItem("checkbeat-volume"));
+  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(1, savedVolume / 100)) : 0.38 };
+  function setVolume(value) {
+    audio.volume = Math.max(0, Math.min(1, value));
+    localStorage.setItem("checkbeat-volume", Math.round(audio.volume * 100));
+    ui.volumeRange.value = Math.round(audio.volume * 100);
+    ui.volumeValue.textContent = Math.round(audio.volume * 100) + "%";
+    if (audio.master) audio.master.gain.setTargetAtTime(audio.volume, audio.ctx.currentTime, 0.025);
+  }
   function audioReady() {
     if (!window.AudioContext && !window.webkitAudioContext) return null;
     if (!audio.ctx) {
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
       audio.master = audio.ctx.createGain();
-      audio.master.gain.value = 0.16;
+      audio.master.gain.value = audio.volume;
       audio.master.connect(audio.ctx.destination);
     }
     if (audio.ctx.state === "suspended") audio.ctx.resume();
@@ -1094,6 +1106,9 @@
   ui.choices.forEach((b) =>
     b.addEventListener("click", () => chooseUpgrade(Number(b.dataset.choice))),
   );
+  setVolume(audio.volume);
+  ui.soundToggle.addEventListener("click", () => ui.soundPanel.classList.toggle("hidden"));
+  ui.volumeRange.addEventListener("input", (e) => setVolume(Number(e.target.value) / 100));
   reset();
   requestAnimationFrame(tick);
 })();
