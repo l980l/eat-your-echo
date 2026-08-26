@@ -30,6 +30,7 @@
       ranking: $("#rankingScreen"),
       rankingButton: $("#rankingButton"),
       gameOverRanking: $("#gameOverRanking"),
+      mainMenuButton: $("#mainMenuButton"),
       rankingClose: $("#rankingClose"),
       leaderboardList: $("#leaderboardList"),
       leaderboardStatus: $("#leaderboardStatus"),
@@ -167,6 +168,15 @@
   }
   function closeRanking() {
     ui.ranking.classList.add("hidden");
+  }
+  function returnToMenu() {
+    S.running = false;
+    S.dev = false;
+    reset();
+    closeRanking();
+    ui.over.classList.add("hidden");
+    ui.devBar.classList.add("hidden");
+    ui.start.classList.remove("hidden");
   }
   async function offerScoreSubmission(score) {
     ui.scoreSubmit.classList.add("hidden");
@@ -1409,6 +1419,7 @@
   });
   ui.rankingButton.addEventListener("click", openRanking);
   ui.gameOverRanking.addEventListener("click", openRanking);
+  ui.mainMenuButton.addEventListener("click", returnToMenu);
   ui.rankingClose.addEventListener("click", closeRanking);
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());

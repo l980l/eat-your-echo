@@ -386,7 +386,7 @@
     .score-submit textarea { min-height: 66px; resize: vertical; }
     .score-submit button { margin: 3px 0 0; }
     .score-status { min-height: 1.4em; margin: 10px 0 0; color: #ffd166; font-size: 12px; }
-    .leaderboard-actions { display: flex; justify-content: center; gap: 9px; }
+    .leaderboard-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
     .leaderboard-actions button { margin-top: 18px; }
     .secondary-button { border-color: #ffffff44; background: #171a32; color: #dce3ff; box-shadow: none; }
     @media (max-width: 560px) {
@@ -541,6 +541,7 @@
           </div>
           <p class="score-status" id="scoreStatus"></p>
           <div class="leaderboard-actions">
+            <button class="secondary-button" id="mainMenuButton">메인 화면</button>
             <button class="secondary-button" id="gameOverRanking">GLOBAL RANKING</button>
             <button id="restartButton">다시 도전 <b>↻</b></button>
           </div>
