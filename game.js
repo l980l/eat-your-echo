@@ -24,8 +24,10 @@
       devPickOptions: $("#devPickOptions"),
       soundToggle: $("#soundToggle"),
       soundPanel: $("#soundPanel"),
-      volumeRange: $("#volumeRange"),
-      volumeValue: $("#volumeValue"),
+      bgmVolumeRange: $("#bgmVolumeRange"),
+      bgmVolumeValue: $("#bgmVolumeValue"),
+      sfxVolumeRange: $("#sfxVolumeRange"),
+      sfxVolumeValue: $("#sfxVolumeValue"),
       combo: $("#comboToast"),
       ranking: $("#rankingScreen"),
       rankingButton: $("#rankingButton"),
@@ -227,35 +229,53 @@
       ui.scoreButton.disabled = false;
     }
   }
-  const savedVolumeRaw = localStorage.getItem("checkbeat-volume-v5");
-  const savedVolume = savedVolumeRaw === null ? NaN : Number(savedVolumeRaw);
-  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(2, savedVolume / 50)) : 2 };
-  function setVolume(value) {
+  const legacyVolumeRaw = localStorage.getItem("checkbeat-volume-v5"),
+    legacyVolume = legacyVolumeRaw === null ? NaN : Number(legacyVolumeRaw),
+    savedBgmVolume = Number(localStorage.getItem("checkbeat-bgm-volume-v1")),
+    savedSfxVolume = Number(localStorage.getItem("checkbeat-sfx-volume-v1"));
+  const initialVolume = Number.isFinite(legacyVolume) ? legacyVolume : 100;
+  const audio = {
+    ctx: null,
+    master: null,
+    bgm: null,
+    sfx: null,
+    timer: null,
+    step: 0,
+    bgmVolume: Number.isFinite(savedBgmVolume) ? Math.max(0, Math.min(2, savedBgmVolume / 50)) : initialVolume / 50,
+    sfxVolume: Number.isFinite(savedSfxVolume) ? Math.max(0, Math.min(2, savedSfxVolume / 50)) : initialVolume / 50,
+  };
+  function setBusVolume(bus, value) {
     let slider = Math.max(0, Math.min(100, value));
-    audio.volume = slider / 50;
-    localStorage.setItem("checkbeat-volume-v5", Math.round(slider));
-    ui.volumeRange.value = Math.round(slider);
-    ui.volumeValue.textContent = Math.round(slider) + "%";
-    if (audio.master) audio.master.gain.setTargetAtTime(audio.volume, audio.ctx.currentTime, 0.025);
+    audio[bus + "Volume"] = slider / 50;
+    localStorage.setItem("checkbeat-" + bus + "-volume-v1", Math.round(slider));
+    ui[bus + "VolumeRange"].value = Math.round(slider);
+    ui[bus + "VolumeValue"].textContent = Math.round(slider) + "%";
+    if (audio[bus]) audio[bus].gain.setTargetAtTime(audio[bus + "Volume"], audio.ctx.currentTime, 0.025);
   }
   function audioReady() {
     if (!window.AudioContext && !window.webkitAudioContext) return null;
     if (!audio.ctx) {
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
       audio.master = audio.ctx.createGain();
+      audio.bgm = audio.ctx.createGain();
+      audio.sfx = audio.ctx.createGain();
       let limiter = audio.ctx.createDynamicsCompressor();
       limiter.threshold.value = -10;
       limiter.knee.value = 8;
       limiter.ratio.value = 12;
       limiter.attack.value = 0.003;
       limiter.release.value = 0.16;
-      audio.master.gain.value = audio.volume;
+      audio.master.gain.value = 1;
+      audio.bgm.gain.value = audio.bgmVolume;
+      audio.sfx.gain.value = audio.sfxVolume;
+      audio.bgm.connect(audio.master);
+      audio.sfx.connect(audio.master);
       audio.master.connect(limiter).connect(audio.ctx.destination);
     }
     if (audio.ctx.state === "suspended") audio.ctx.resume();
     return audio.ctx;
   }
-  function tone(freq, duration, type = "sine", volume = 0.2, slide = 1) {
+  function tone(freq, duration, type = "sine", volume = 0.2, slide = 1, bus = "sfx") {
     let ctx = audioReady();
     if (!ctx) return;
     let osc = ctx.createOscillator(),
@@ -267,11 +287,11 @@
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    osc.connect(gain).connect(audio.master);
+    osc.connect(gain).connect(audio[bus]);
     osc.start(now);
     osc.stop(now + duration + 0.02);
   }
-  function noise(duration = 0.08, volume = 0.08) {
+  function noise(duration = 0.08, volume = 0.08, bus = "sfx") {
     let ctx = audioReady();
     if (!ctx) return;
     let buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate),
@@ -281,7 +301,7 @@
     for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
     source.buffer = buffer;
     gain.gain.value = volume;
-    source.connect(gain).connect(audio.master);
+    source.connect(gain).connect(audio[bus]);
     source.start();
   }
   function sfx(kind, chain = 1) {
@@ -309,8 +329,8 @@
     let loop = () => {
       if (!S.running) { audio.timer = null; return; }
       let n = notes[audio.step % notes.length];
-      if (n) tone(n * 2, 0.16, "triangle", 0.055, 0.995);
-      if (audio.step % 4 === 0) tone(n || 110, 0.22, "sine", 0.08, 0.98);
+      if (n) tone(n * 2, 0.16, "triangle", 0.055, 0.995, "bgm");
+      if (audio.step % 4 === 0) tone(n || 110, 0.22, "sine", 0.08, 0.98, "bgm");
       audio.step++;
       audio.timer = setTimeout(loop, 190);
     };
@@ -1459,9 +1479,11 @@
   ui.choices.forEach((b) =>
     b.addEventListener("click", () => chooseUpgrade(Number(b.dataset.choice))),
   );
-  setVolume(Number.isFinite(savedVolume) ? savedVolume : 100);
+  setBusVolume("bgm", Math.round(audio.bgmVolume * 50));
+  setBusVolume("sfx", Math.round(audio.sfxVolume * 50));
   ui.soundToggle.addEventListener("click", () => ui.soundPanel.classList.toggle("hidden"));
-  ui.volumeRange.addEventListener("input", (e) => setVolume(Number(e.target.value)));
+  ui.bgmVolumeRange.addEventListener("input", (e) => setBusVolume("bgm", Number(e.target.value)));
+  ui.sfxVolumeRange.addEventListener("input", (e) => setBusVolume("sfx", Number(e.target.value)));
   reset();
   requestAnimationFrame(tick);
 })();
