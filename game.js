@@ -55,6 +55,7 @@
       enemies: [],
       moves: [],
       particles: [],
+      effects: [],
       trail: [],
       enemyTrail: [],
       upgradeOptions: [],
@@ -130,6 +131,7 @@
     S.grace = 3;
     S.camera = { x: 0, y: 0 };
     S.particles = [];
+    S.effects = [];
     S.trail = [];
     S.enemyTrail = [];
     S.upgradeOptions = [];
@@ -213,6 +215,9 @@
         size: 4 + Math.random() * 3,
       });
     }
+  }
+  function traitFx(type, x, y, extra = {}) {
+    S.effects.push({ type, x, y, life: extra.life || 0.42, max: extra.life || 0.42, ...extra });
   }
   function captureBurst(x, y, combo) {
     let colors = [
@@ -425,6 +430,9 @@
     p.x = m.x;
     p.y = m.y;
     S.trail.push({ x1: from.x, y1: from.y, x2: p.x, y2: p.y, life: 1 });
+    if (p.traits.includes("longStride") && (Math.abs(m.x - from.x) > 1 || Math.abs(m.y - from.y) > 1))
+      traitFx("stride", p.x, p.y, { dx, dy });
+    if (p.traits.includes("royalStep")) traitFx("royal", p.x, p.y);
     S.enemies = S.enemies.filter((e) => !caught.includes(e));
     if (caught.length) {
       gained += caught.length;
@@ -433,9 +441,8 @@
       caught.forEach((e) => captureBurst(e.x, e.y, combo));
     }
     if (p.piece === "knight" || p.traits.includes("shockwave")) {
-      let radius = p.traits.includes("magnet") ? 2 : 1,
-        v = S.enemies.filter(
-          (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= radius,
+      let v = S.enemies.filter(
+          (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= 1,
         );
       S.enemies = S.enemies.filter((e) => !v.includes(e));
       gained += v.length;
@@ -443,6 +450,7 @@
       S.kills += v.length;
       v.forEach((e) => captureBurst(e.x, e.y, combo));
       burst(p.x, p.y, "#c274ff", 20);
+      traitFx("shockwave", p.x, p.y);
     }
     if (p.piece === "bishop" && caught.length) {
       let v = S.enemies.filter((e) => {
@@ -455,6 +463,17 @@
       p.xp += v.length;
       S.kills += v.length;
       v.forEach((e) => captureBurst(e.x, e.y, combo));
+    }
+    if (gained && p.traits.includes("magnet")) {
+      let v = S.enemies.filter(
+        (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= 2,
+      );
+      S.enemies = S.enemies.filter((e) => !v.includes(e));
+      gained += v.length;
+      p.xp += v.length;
+      S.kills += v.length;
+      v.forEach((e) => captureBurst(e.x, e.y, combo));
+      traitFx("magnet", p.x, p.y);
     }
     if (gained && p.traits.includes("echoBlade")) {
       let v = S.enemies
@@ -472,8 +491,12 @@
       p.xp += v.length;
       S.kills += v.length;
       v.forEach((e) => captureBurst(e.x, e.y, combo));
+      v.forEach((e) => traitFx("echo", p.x, p.y, { x2: e.x, y2: e.y }));
     }
-    if (gained && p.traits.includes("chainSpark")) p.xp++;
+    if (gained && p.traits.includes("chainSpark")) {
+      p.xp++;
+      traitFx("spark", p.x, p.y);
+    }
     hud();
     let reroll = (p.rank + 1) % 5 === 0;
     if (
@@ -688,6 +711,71 @@
       g.stroke();
       g.restore();
     }
+    S.effects.forEach((f) => {
+      let q = pos(f.x, f.y),
+        t = 1 - f.life / f.max;
+      g.save();
+      g.globalAlpha = Math.max(0, f.life / f.max);
+      g.lineCap = "round";
+      if (f.type === "shockwave") {
+        g.strokeStyle = "#c274ff";
+        g.shadowColor = "#c274ff";
+        g.shadowBlur = 18;
+        g.lineWidth = 4 * (1 - t) + 1;
+        g.beginPath();
+        g.arc(q.x, q.y, s * (0.18 + t * 1.35), 0, Math.PI * 2);
+        g.stroke();
+      } else if (f.type === "magnet") {
+        g.strokeStyle = "#62d8ff";
+        g.shadowColor = "#62d8ff";
+        g.shadowBlur = 16;
+        g.lineWidth = 2;
+        g.setLineDash([7, 5]);
+        g.beginPath();
+        g.arc(q.x, q.y, s * (0.45 + t * 1.65), -t * 7, Math.PI * 2 - t * 7);
+        g.stroke();
+      } else if (f.type === "royal") {
+        g.strokeStyle = "#ffd166";
+        g.shadowColor = "#ffd166";
+        g.shadowBlur = 14;
+        g.lineWidth = 2.5;
+        g.translate(q.x, q.y);
+        g.rotate(t * Math.PI / 2);
+        g.strokeRect(-s * (0.22 + t * 0.34), -s * (0.22 + t * 0.34), s * (0.44 + t * 0.68), s * (0.44 + t * 0.68));
+      } else if (f.type === "stride") {
+        g.strokeStyle = "#53f0e4";
+        g.shadowColor = "#53f0e4";
+        g.shadowBlur = 14;
+        g.lineWidth = 3;
+        g.beginPath();
+        g.moveTo(q.x - f.dx * s * (0.15 + t * 1.4), q.y - f.dy * s * (0.15 + t * 1.4));
+        g.lineTo(q.x + f.dx * s * 0.18, q.y + f.dy * s * 0.18);
+        g.stroke();
+      } else if (f.type === "spark") {
+        g.strokeStyle = "#fff3a3";
+        g.shadowColor = "#ffd166";
+        g.shadowBlur = 18;
+        g.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          let a = (i * Math.PI) / 4 + t * 0.5;
+          g.beginPath();
+          g.moveTo(q.x, q.y);
+          g.lineTo(q.x + Math.cos(a) * s * (0.25 + t * 0.7), q.y + Math.sin(a) * s * (0.25 + t * 0.7));
+          g.stroke();
+        }
+      } else if (f.type === "echo") {
+        let end = pos(f.x2, f.y2);
+        g.strokeStyle = "#ff8df5";
+        g.shadowColor = "#ff4dff";
+        g.shadowBlur = 20;
+        g.lineWidth = 5 * (1 - t) + 1;
+        g.beginPath();
+        g.moveTo(q.x, q.y);
+        g.lineTo(end.x, end.y);
+        g.stroke();
+      }
+      g.restore();
+    });
     S.moves.forEach((m) => {
       let q = pos(m.x, m.y),
         active = S.phase === "player",
@@ -757,6 +845,8 @@
         p.life -= dt;
       });
       S.particles = S.particles.filter((p) => p.life > 0);
+      S.effects.forEach((f) => (f.life -= dt));
+      S.effects = S.effects.filter((f) => f.life > 0);
       if (S.phase === "enemy") {
         S.elapsed += dt;
         let r = Math.min(1, S.elapsed / S.beat);
