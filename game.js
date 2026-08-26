@@ -1321,11 +1321,16 @@
         let r = Math.min(1, S.elapsed / S.beat);
         ui.meter.style.width = r * 100 + "%";
         ui.meter.style.background = "#f45cf4";
+        ui.meter.style.boxShadow = "0 0 15px #f45cf4";
         ui.beat.textContent = Math.max(0, S.beat - S.elapsed).toFixed(1) + "s";
         if (S.elapsed >= S.beat) enemyBeat();
       } else if (S.phase === "player") {
-        ui.meter.style.width = "100%";
-        ui.meter.style.background = "#53f0e4";
+        let comboColor = S.chain
+          ? COMBO_COLORS[(S.chain - 1) % COMBO_COLORS.length]
+          : "#53f0e4";
+        ui.meter.style.width = Math.min(100, S.chain * (100 / 7)) + "%";
+        ui.meter.style.background = comboColor;
+        ui.meter.style.boxShadow = "0 0 15px " + comboColor;
       } else if (S.phase === "captured") {
         S.captureTimer -= dt;
         ui.meter.style.width = Math.max(0, S.captureTimer / 0.34) * 100 + "%";
