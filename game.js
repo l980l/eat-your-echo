@@ -73,6 +73,73 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
+  const audio = { ctx: null, master: null, timer: null, step: 0 };
+  function audioReady() {
+    if (!window.AudioContext && !window.webkitAudioContext) return null;
+    if (!audio.ctx) {
+      audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audio.master = audio.ctx.createGain();
+      audio.master.gain.value = 0.16;
+      audio.master.connect(audio.ctx.destination);
+    }
+    if (audio.ctx.state === "suspended") audio.ctx.resume();
+    return audio.ctx;
+  }
+  function tone(freq, duration, type = "sine", volume = 0.2, slide = 1) {
+    let ctx = audioReady();
+    if (!ctx) return;
+    let osc = ctx.createOscillator(),
+      gain = ctx.createGain(),
+      now = ctx.currentTime;
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * slide), now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain).connect(audio.master);
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+  }
+  function noise(duration = 0.08, volume = 0.08) {
+    let ctx = audioReady();
+    if (!ctx) return;
+    let buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate),
+      data = buffer.getChannelData(0),
+      source = ctx.createBufferSource(),
+      gain = ctx.createGain();
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    source.buffer = buffer;
+    gain.gain.value = volume;
+    source.connect(gain).connect(audio.master);
+    source.start();
+  }
+  function sfx(kind) {
+    if (!audio.ctx) return;
+    if (kind === "move") tone(330, 0.07, "triangle", 0.13, 1.35);
+    if (kind === "capture") { tone(180, 0.12, "sawtooth", 0.22, 0.55); tone(620, 0.09, "square", 0.11, 0.72); noise(0.07, 0.12); }
+    if (kind === "enemy") { tone(95, 0.11, "square", 0.1, 0.78); noise(0.045, 0.04); }
+    if (kind === "upgrade") { tone(440, 0.13, "triangle", 0.16, 1.5); tone(660, 0.23, "sine", 0.13, 1.5); }
+    if (kind === "death") { tone(180, 0.6, "sawtooth", 0.25, 0.18); noise(0.28, 0.14); }
+    if (kind === "shockwave") tone(105, 0.2, "sawtooth", 0.12, 0.45);
+    if (kind === "magnet") tone(250, 0.2, "sine", 0.1, 1.9);
+    if (kind === "echo") tone(720, 0.16, "square", 0.09, 0.55);
+    if (kind === "spark") tone(820, 0.09, "triangle", 0.09, 1.6);
+  }
+  function startBgm() {
+    audioReady();
+    if (!audio.ctx || audio.timer) return;
+    let notes = [110, 0, 164.81, 196, 220, 196, 164.81, 0, 130.81, 0, 196, 246.94, 261.63, 246.94, 196, 0];
+    let loop = () => {
+      if (!S.running) { audio.timer = null; return; }
+      let n = notes[audio.step % notes.length];
+      if (n) tone(n * 2, 0.16, "triangle", 0.055, 0.995);
+      if (audio.step % 4 === 0) tone(n || 110, 0.22, "sine", 0.08, 0.98);
+      audio.step++;
+      audio.timer = setTimeout(loop, 190);
+    };
+    loop();
+  }
   function resize() {
     D = Math.min(devicePixelRatio || 1, 2);
     let r = c.getBoundingClientRect(),
@@ -224,6 +291,7 @@
   }
   function traitFx(type, x, y, extra = {}) {
     S.effects.push({ type, x, y, life: extra.life || 0.42, max: extra.life || 0.42, ...extra });
+    if (["shockwave", "magnet", "echo", "spark"].includes(type)) sfx(type);
   }
   function captureBurst(x, y, combo) {
     let colors = [
@@ -380,6 +448,7 @@
     S.trail = [];
     S.enemyTrail = [];
     S.chain = 0;
+    sfx("enemy");
     let used = new Set(),
       captured = false;
     S.enemies
@@ -435,6 +504,7 @@
           : S.enemies.filter((e) => e.x === m.x && e.y === m.y);
     p.x = m.x;
     p.y = m.y;
+    sfx("move");
     S.trail.push({ x1: from.x, y1: from.y, x2: p.x, y2: p.y, via: p.piece === "knight" ? knightCorner(from, p) : null, life: 1 });
     if (p.traits.includes("longStride") && (Math.abs(m.x - from.x) > 1 || Math.abs(m.y - from.y) > 1))
       traitFx("stride", p.x, p.y, { dx, dy });
@@ -503,6 +573,7 @@
       p.xp++;
       traitFx("spark", p.x, p.y);
     }
+    if (gained) sfx("capture");
     hud();
     let reroll = (p.rank + 1) % 5 === 0;
     if (
@@ -606,6 +677,7 @@
         ? p.piece.toUpperCase() + "으로 승진했습니다."
         : "특성 " + o.name + "을 획득했습니다.";
     burst(p.x, p.y, "#f45cf4", 34);
+    sfx("upgrade");
   }
   function die() {
     S.phase = "dead";
@@ -614,6 +686,7 @@
     ui.beat.textContent = "CAPTURED";
     ui.hint.textContent = "당신의 말이 체스판에서 부서집니다.";
     deathBurst(S.player.x, S.player.y);
+    sfx("death");
   }
   function over() {
     S.running = false;
@@ -966,6 +1039,7 @@
     S.dev = ui.devToggle.checked;
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
+    startBgm();
     ui.start.classList.add("hidden");
   });
   $("#restartButton").addEventListener("click", () => {
@@ -973,6 +1047,7 @@
     ui.devSpeed.textContent = "[4] ×2 SPEED";
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
+    startBgm();
     ui.over.classList.add("hidden");
   });
   $("#devXp").addEventListener("click", devXp);
