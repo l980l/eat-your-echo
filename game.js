@@ -66,7 +66,13 @@
     D = 1,
     last = 0;
   const K = (x, y) => x + "," + y,
-    dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
+    knightCorner = (a, b) =>
+      Math.abs(a.x - b.x) === 2 && Math.abs(a.y - b.y) === 1
+        ? Math.abs(a.x - b.x) > Math.abs(a.y - b.y)
+          ? { x: b.x, y: a.y }
+          : { x: a.x, y: b.y }
+        : null;
   function resize() {
     D = Math.min(devicePixelRatio || 1, 2);
     let r = c.getBoundingClientRect(),
@@ -328,7 +334,7 @@
       ],
       slide = (ds) => {
         for (let [dx, dy] of ds) {
-          for (let n = 1; n <= Math.max(8, dist(e, p)); n++) {
+          for (let n = 1; n <= 3; n++) {
             let q = { x: e.x + dx * n, y: e.y + dy * n };
             if (occupied.has(K(q.x, q.y))) break;
             opts.push(q);
@@ -391,7 +397,7 @@
           e.y = n.y;
           used.add(K(e.x, e.y));
           if (from.x !== e.x || from.y !== e.y)
-            S.enemyTrail.push({ x1: from.x, y1: from.y, x2: e.x, y2: e.y });
+            S.enemyTrail.push({ x1: from.x, y1: from.y, x2: e.x, y2: e.y, via: e.type === "knight" ? knightCorner(from, e) : null });
         }
       });
     if (captured && S.grace <= 0) return die();
@@ -429,7 +435,7 @@
           : S.enemies.filter((e) => e.x === m.x && e.y === m.y);
     p.x = m.x;
     p.y = m.y;
-    S.trail.push({ x1: from.x, y1: from.y, x2: p.x, y2: p.y, life: 1 });
+    S.trail.push({ x1: from.x, y1: from.y, x2: p.x, y2: p.y, via: p.piece === "knight" ? knightCorner(from, p) : null, life: 1 });
     if (p.traits.includes("longStride") && (Math.abs(m.x - from.x) > 1 || Math.abs(m.y - from.y) > 1))
       traitFx("stride", p.x, p.y, { dx, dy });
     if (p.traits.includes("royalStep")) traitFx("royal", p.x, p.y);
@@ -678,6 +684,10 @@
           b = pos(t.x2, t.y2);
         g.beginPath();
         g.moveTo(a.x, a.y);
+        if (t.via) {
+          let v = pos(t.via.x, t.via.y);
+          g.lineTo(v.x, v.y);
+        }
         g.lineTo(b.x, b.y);
         g.stroke();
       });
@@ -706,6 +716,10 @@
       g.moveTo(a.x, a.y);
       S.trail.forEach((t) => {
         let b = pos(t.x2, t.y2);
+        if (t.via) {
+          let v = pos(t.via.x, t.via.y);
+          g.lineTo(v.x, v.y);
+        }
         g.lineTo(b.x, b.y);
       });
       g.stroke();
