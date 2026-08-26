@@ -1041,7 +1041,9 @@
   function piece(x, y, t, enemy = false, hp = 1, maxHp = 1) {
     let q = pos(x, y),
       s = size(),
-      durability = COMBO_COLORS[Math.max(0, Math.min(6, maxHp - 1))],
+      // The color communicates remaining hits, not the enemy's original maximum.
+      // A 2-health orange enemy becomes red after its first hit.
+      durability = COMBO_COLORS[Math.max(0, Math.min(6, hp - 1))],
       col = enemy ? durability : "#53f0e4",
       health = Math.max(0, Math.min(1, hp / maxHp));
     g.save();
