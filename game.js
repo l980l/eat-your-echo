@@ -250,8 +250,8 @@
     S.upgradeOptions = [];
     S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false };
     S.enemies = [
-      { x: 0, y: -6, type: "pawn", face: { x: 0, y: 1 } },
-      { x: -2, y: -7, type: "pawn", face: { x: 0, y: 1 } },
+      { x: 0, y: -6, type: "pawn", face: { x: 0, y: 1 }, hp: 1, maxHp: 1 },
+      { x: -2, y: -7, type: "pawn", face: { x: 0, y: 1 }, hp: 1, maxHp: 1 },
     ];
     moves();
     hud();
@@ -366,6 +366,47 @@
       });
     }
   }
+  function hitBurst(x, y, combo) {
+    let color = COMBO_COLORS[(combo - 1) % COMBO_COLORS.length];
+    for (let i = 0; i < 12; i++) {
+      let a = Math.random() * Math.PI * 2,
+        v = 1.2 + Math.random() * 2.5;
+      S.particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v,
+        life: 0.2 + Math.random() * 0.18,
+        color,
+        size: 2 + Math.random() * 4,
+        drag: 0.9,
+        metal: true,
+        spin: (Math.random() - 0.5) * 15,
+        angle: Math.random() * 6.28,
+      });
+    }
+  }
+  function damageEnemies(targets, combo, hitSet) {
+    let victims = [...new Set(targets)].filter(
+      (e) => S.enemies.includes(e) && !hitSet?.has(e),
+    );
+    if (!victims.length) return { hits: 0, kills: 0 };
+    victims.forEach((e) => hitSet?.add(e));
+    let dead = [];
+    victims.forEach((e) => {
+      e.hp = (e.hp || 1) - 1;
+      if (e.hp <= 0) {
+        dead.push(e);
+        captureBurst(e.x, e.y, combo);
+      } else hitBurst(e.x, e.y, combo);
+    });
+    S.enemies = S.enemies.filter((e) => !dead.includes(e));
+    if (dead.length) {
+      S.player.xp += dead.length;
+      S.kills += dead.length;
+    }
+    return { hits: victims.length, kills: dead.length };
+  }
   function deathBurst(x, y) {
     for (let i = 0; i < 34; i++) {
       let a = Math.random() * Math.PI * 2,
@@ -421,11 +462,21 @@
             : p.rank === 3
               ? ["pawn", "knight", "rook", "bishop", "bishop", "king"]
               : ["pawn", "knight", "rook", "bishop", "king", "queen"];
+    let maxHp =
+      S.wave >= 40 && Math.random() < 0.18
+        ? 3
+        : S.wave >= 28 && Math.random() < 0.42
+          ? 2
+          : S.wave >= 14 && Math.random() < 0.22
+            ? 2
+            : 1;
     S.enemies.push({
       x,
       y,
       type: ts[Math.floor(Math.random() * ts.length)],
       face,
+      hp: maxHp,
+      maxHp,
     });
   }
   function toward(e) {
@@ -532,6 +583,8 @@
     let p = S.player,
       from = { x: p.x, y: p.y },
       gained = 0,
+      attacked = false,
+      struck = new Set(),
       combo = S.chain + 1,
       dx = Math.sign(m.x - from.x),
       dy = Math.sign(m.y - from.y),
@@ -554,22 +607,18 @@
     if (p.traits.includes("longStride") && (Math.abs(m.x - from.x) > 1 || Math.abs(m.y - from.y) > 1))
       traitFx("stride", p.x, p.y, { dx, dy });
     if (p.traits.includes("royalStep")) traitFx("royal", p.x, p.y);
-    S.enemies = S.enemies.filter((e) => !caught.includes(e));
     if (caught.length) {
-      gained += caught.length;
-      p.xp += caught.length;
-      S.kills += caught.length;
-      caught.forEach((e) => captureBurst(e.x, e.y, combo));
+      let r = damageEnemies(caught, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
     }
     if (p.piece === "knight" || p.traits.includes("shockwave")) {
       let v = S.enemies.filter(
           (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= 1,
         );
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
-      v.forEach((e) => captureBurst(e.x, e.y, combo));
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
       burst(p.x, p.y, "#c274ff", 20);
       traitFx("shockwave", p.x, p.y);
     }
@@ -579,24 +628,20 @@
           y = e.y - p.y;
         return Math.abs(x) === Math.abs(y);
       });
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
-      v.forEach((e) => captureBurst(e.x, e.y, combo));
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
     }
-    if (gained && p.traits.includes("magnet")) {
+    if (attacked && p.traits.includes("magnet")) {
       let v = S.enemies.filter(
         (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= 2,
       );
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
-      v.forEach((e) => captureBurst(e.x, e.y, combo));
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
       traitFx("magnet", p.x, p.y);
     }
-    if (gained && p.traits.includes("echoBlade")) {
+    if (attacked && p.traits.includes("echoBlade")) {
       let v = S.enemies
         .filter((e) => {
           let x = e.x - p.x,
@@ -607,29 +652,25 @@
         })
         .sort((a, b) => dist(a, p) - dist(b, p))
         .slice(0, 1);
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
-      v.forEach((e) => captureBurst(e.x, e.y, combo));
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
       v.forEach((e) => traitFx("echo", p.x, p.y, { x2: e.x, y2: e.y }));
     }
-    if (gained && p.traits.includes("fork")) {
+    if (attacked && p.traits.includes("fork")) {
       let v = S.enemies.filter((e) => {
         let x = Math.abs(e.x - p.x),
           y = Math.abs(e.y - p.y);
         return (x === 1 && y === 2) || (x === 2 && y === 1);
       });
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
       v.forEach((e) => {
-        captureBurst(e.x, e.y, combo);
         traitFx("fork", p.x, p.y, { x2: e.x, y2: e.y, via: knightCorner(p, e) });
       });
     }
-    if (gained && p.traits.includes("crossCheck")) {
+    if (attacked && p.traits.includes("crossCheck")) {
       let v = [[1, 0], [-1, 0], [0, 1], [0, -1]]
         .map(([dx, dy]) =>
           S.enemies
@@ -641,20 +682,18 @@
             .sort((a, b) => dist(a, p) - dist(b, p))[0],
         )
         .filter(Boolean);
-      S.enemies = S.enemies.filter((e) => !v.includes(e));
-      gained += v.length;
-      p.xp += v.length;
-      S.kills += v.length;
+      let r = damageEnemies(v, combo, struck);
+      attacked ||= r.hits > 0;
+      gained += r.kills;
       v.forEach((e) => {
-        captureBurst(e.x, e.y, combo);
         traitFx("cross", p.x, p.y, { x2: e.x, y2: e.y });
       });
     }
-    if (gained && p.traits.includes("chainSpark")) {
+    if (attacked && p.traits.includes("chainSpark")) {
       p.xp++;
       traitFx("spark", p.x, p.y);
     }
-    if (gained) sfx("capture");
+    if (attacked) sfx("capture");
     hud();
     let reroll = (p.rank + 1) % 5 === 0;
     if (
@@ -664,13 +703,17 @@
       openUpgrade(true);
       return;
     }
-    if (gained) {
-      S.chain++;
-      showCombo(S.chain);
+    if (attacked) {
+      if (gained) {
+        S.chain++;
+        showCombo(S.chain);
+      }
       S.flash = 1;
       moves();
       ui.hint.textContent =
-        "연속 수 ×" + S.chain + "! 한 번 더 움직일 수 있습니다.";
+        gained
+          ? "연속 수 ×" + S.chain + "! 한 번 더 움직일 수 있습니다."
+          : "장갑 적을 타격했습니다! 마무리할 때까지 한 번 더 움직이세요.";
       return;
     }
     if (p.traits.includes("slipstream") && !p.slipUsed) {
@@ -840,7 +883,7 @@
     g.strokeStyle = "#66609422";
     g.strokeRect(q.x - s / 2, q.y - s / 2, s, s);
   }
-  function piece(x, y, t, enemy = false) {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1) {
     let q = pos(x, y),
       s = size(),
       col = enemy ? "#fa5c8a" : "#53f0e4";
@@ -860,6 +903,14 @@
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y + 1);
+    if (enemy && maxHp > 1) {
+      let label = hp + "/" + maxHp;
+      g.font = "700 " + Math.max(10, s * 0.15) + "px monospace";
+      g.fillStyle = "#ffd166";
+      g.shadowColor = "#ff9f43";
+      g.shadowBlur = 8;
+      g.fillText(label, q.x, q.y - s * 0.43);
+    }
     g.restore();
   }
   function draw() {
@@ -1008,7 +1059,7 @@
       g.lineWidth = active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
     });
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true));
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1));
     if (S.phase !== "dead") piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
@@ -1106,7 +1157,7 @@
     if (!S.running || S.phase === "devpick") return;
     let p = S.player,
       q = S.moves[0] || { x: p.x + 1, y: p.y };
-    S.enemies.push({ x: q.x, y: q.y, type: "pawn", face: { x: 0, y: 1 } });
+    S.enemies.push({ x: q.x, y: q.y, type: "pawn", face: { x: 0, y: 1 }, hp: 1, maxHp: 1 });
     ui.hint.textContent = "DEV: 인접한 폰을 생성했습니다.";
   }
   function devBeat() {
