@@ -115,6 +115,12 @@
       name: "CHAIN SPARK",
       desc: "연속 처치 시 XP를 추가 획득",
     },
+    {
+      id: "echoBlade",
+      icon: "➤",
+      name: "ECHO BLADE",
+      desc: "처치 시 이동 방향의 가장 가까운 적 관통",
+    },
   ];
   function reset() {
     S.phase = "enemy";
@@ -444,6 +450,23 @@
           y = e.y - p.y;
         return Math.abs(x) === Math.abs(y);
       });
+      S.enemies = S.enemies.filter((e) => !v.includes(e));
+      gained += v.length;
+      p.xp += v.length;
+      S.kills += v.length;
+      v.forEach((e) => captureBurst(e.x, e.y, combo));
+    }
+    if (gained && p.traits.includes("echoBlade")) {
+      let v = S.enemies
+        .filter((e) => {
+          let x = e.x - p.x,
+            y = e.y - p.y;
+          if (dx === 0) return x === 0 && y * dy > 0;
+          if (dy === 0) return y === 0 && x * dx > 0;
+          return x * dy === y * dx && x * dx > 0 && y * dy > 0;
+        })
+        .sort((a, b) => dist(a, p) - dist(b, p))
+        .slice(0, 1);
       S.enemies = S.enemies.filter((e) => !v.includes(e));
       gained += v.length;
       p.xp += v.length;
