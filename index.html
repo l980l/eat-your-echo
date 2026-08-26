@@ -260,19 +260,59 @@
       background: url("assets/its-my-turn-check-thumbnail.png") center / cover;
       backdrop-filter: none;
     }
-    #startScreen .start-button {
+    #startScreen .start-menu {
       position: absolute;
       top: 50%;
-      left: 50%;
+      right: max(34px, env(safe-area-inset-right));
       z-index: 2;
-      min-width: min(76vw, 360px);
-      margin: 0;
-      transform: translate(-50%, -50%);
-      font-size: clamp(22px, 4vw, 34px);
+      display: grid;
+      width: min(34vw, 350px);
+      min-width: 260px;
+      gap: 9px;
+      transform: translateY(-50%);
     }
-    #startScreen .start-button:hover,
-    #startScreen .start-button:active {
-      transform: translate(-50%, -50%) scale(1.035);
+    #startScreen .start-menu button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 68px;
+      margin: 0;
+      padding: 17px 20px;
+      border-color: #53f0e488;
+      border-left: 4px solid #53f0e4;
+      background: #0a0d20d9;
+      color: #edfaff;
+      box-shadow: 0 0 24px #03041188;
+      font-size: clamp(16px, 2vw, 23px);
+      letter-spacing: 0.06em;
+      text-align: left;
+      backdrop-filter: blur(5px);
+    }
+    #startScreen .start-menu button::after {
+      content: "↗";
+      color: #53f0e4;
+      font-size: 1.25em;
+    }
+    #startScreen .start-menu button:hover,
+    #startScreen .start-menu button:active {
+      transform: translateX(-7px);
+      border-color: #fff;
+      background: #172447e8;
+      box-shadow: 0 0 25px #53f0e444;
+    }
+    #startScreen .start-menu #rankingButton {
+      border-left-color: #d66efd;
+      color: #eac8ff;
+    }
+    #startScreen .start-menu #rankingButton::after { color: #d66efd; }
+    #startScreen .start-menu button b { display: none; }
+    #startScreen .start-menu::before {
+      content: "SELECT A MOVE";
+      margin: 0 0 3px 4px;
+      color: #b9c4df;
+      font: 500 10px monospace;
+      letter-spacing: 0.22em;
     }
     #startScreen .start-dev {
       position: absolute;
@@ -286,20 +326,6 @@
       background: #090a1888;
       color: #ffd166;
       font-size: 9px;
-      backdrop-filter: blur(3px);
-    }
-    #rankingButton {
-      position: absolute;
-      z-index: 2;
-      right: max(18px, env(safe-area-inset-right));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      margin: 0;
-      padding: 9px 12px;
-      border-color: #53f0e4aa;
-      background: #090a1888;
-      color: #53f0e4;
-      box-shadow: none;
-      font-size: 11px;
       backdrop-filter: blur(3px);
     }
     .leaderboard-panel {
@@ -349,7 +375,12 @@
     .leaderboard-actions button { margin-top: 18px; }
     .secondary-button { border-color: #ffffff44; background: #171a32; color: #dce3ff; box-shadow: none; }
     @media (max-width: 560px) {
-      #rankingButton { right: 10px; bottom: 10px; font-size: 9px; }
+      #startScreen .start-menu {
+        right: max(12px, env(safe-area-inset-right));
+        width: min(65vw, 310px);
+        min-width: 0;
+      }
+      #startScreen .start-menu button { min-height: 57px; padding: 14px 15px; font-size: 16px; }
       .leaderboard-panel { width: min(94vw, 630px); padding: 24px 16px; }
       .leaderboard-row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 9px; }
       .leaderboard-message { font-size: 11px; }
@@ -449,8 +480,10 @@
       <section class="overlay" id="startScreen">
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
-        ><button class="start-button" id="startButton">IT'S MY TURN <b>↗</b></button
-        ><button id="rankingButton">GLOBAL RANKING</button>
+        ><nav class="start-menu" aria-label="시작 메뉴">
+          <button class="start-button" id="startButton">OPENING <b>↗</b></button>
+          <button id="rankingButton">GLOBAL RANKING</button>
+        </nav>
       </section>
       <section class="overlay hidden" id="upgradeScreen">
         <div class="panel upgrade">
