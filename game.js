@@ -55,14 +55,6 @@
       queen: "♛",
       king: "♚",
     },
-    pieceMark = {
-      pawn: "P",
-      knight: "N",
-      bishop: "B",
-      rook: "R",
-      queen: "Q",
-      king: "K",
-    },
     S = {
       running: false,
       dev: false,
@@ -1078,31 +1070,14 @@
       col = enemy ? durability : "#53f0e4",
       health = Math.max(0, Math.min(1, hp / maxHp));
     g.save();
-    g.shadowBlur = enemy ? 18 : 28;
+    g.shadowBlur = enemy ? 20 : 30;
     g.shadowColor = col;
-    g.globalAlpha = enemy ? 0.16 + health * 0.18 : 1;
-    g.fillStyle = enemy ? col : "#123d4d";
-    g.beginPath();
-    g.arc(q.x, q.y, s * 0.31, 0, 7);
-    g.fill();
-    g.globalAlpha = 1;
-    g.lineWidth = 2;
-    g.strokeStyle = col;
-    g.stroke();
-    g.shadowBlur = 0;
     g.globalAlpha = enemy ? 0.68 + health * 0.32 : 1;
     g.fillStyle = enemy ? col : "#f1ffff";
-    g.shadowColor = "#050611";
-    g.shadowBlur = 3;
-    g.font = "700 " + s * 0.46 + "px Georgia, 'Times New Roman', serif";
+    g.font = "700 " + s * 0.62 + "px Georgia, 'Times New Roman', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y - s * 0.035);
-    g.globalAlpha = 1;
-    g.shadowBlur = 0;
-    g.fillStyle = enemy ? col : "#53f0e4";
-    g.font = "700 " + Math.max(9, s * 0.14) + "px monospace";
-    g.fillText(pieceMark[t], q.x, q.y + s * 0.285);
+    g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
     g.restore();
   }
   function draw() {
