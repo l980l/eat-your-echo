@@ -700,12 +700,12 @@
       p.xp >= 3 + p.rank * 2 &&
       (p.rank === 0 || reroll || p.traits.length < TRAITS.length)
     ) {
-      openUpgrade(true);
+      openUpgrade(true, gained);
       return;
     }
     if (attacked) {
       if (gained) {
-        S.chain++;
+        S.chain += gained;
         showCombo(S.chain);
       }
       S.flash = 1;
@@ -732,7 +732,7 @@
   function chooseRandom(list, n) {
     return [...list].sort(() => Math.random() - 0.5).slice(0, n);
   }
-  function openUpgrade(continueTurn = false) {
+  function openUpgrade(continueTurn = false, chainGain = 0) {
     let p = S.player,
       pieces = ["knight", "bishop", "rook", "queen", "king"],
       reroll = p.rank > 0 && (p.rank + 1) % 5 === 0;
@@ -764,6 +764,7 @@
     }
     S.phase = "upgrade";
     S.upgradeContinueTurn = continueTurn;
+    S.upgradeChainGain = chainGain;
     S.upgradeLock = performance.now() + 550;
     ui.upgrade.classList.remove("hidden");
     ui.hint.textContent = "레벨업 보상을 선택하세요.";
@@ -830,12 +831,16 @@
     hud();
     ui.upgrade.classList.add("hidden");
     let continueTurn = S.upgradeContinueTurn;
+    let chainGain = S.upgradeChainGain || 0;
     S.upgradeContinueTurn = false;
+    S.upgradeChainGain = 0;
     S.phase = continueTurn ? "player" : "enemy";
     S.elapsed = 0;
     if (continueTurn) {
-      S.chain++;
-      showCombo(S.chain);
+      if (chainGain) {
+        S.chain += chainGain;
+        showCombo(S.chain);
+      }
       S.flash = 1;
       ui.phase.textContent = "YOUR MOVE";
       ui.beat.textContent = "MOVE NOW";
