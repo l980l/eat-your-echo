@@ -413,6 +413,7 @@
   function reset() {
     S.phase = "enemy";
     S.elapsed = S.flash = S.wave = S.kills = S.death = S.chain = 0;
+    S.displayChain = 0;
     S.devSpeed = 1;
     S.beat = 0.45;
     S.grace = 3;
@@ -434,16 +435,26 @@
     ui.hp.textContent = S.wave;
     ui.xp.textContent = S.player.xp + " / " + (3 + S.player.rank * 2);
   }
-  function showCombo(chain) {
-    clearTimeout(S.comboTimer);
-    let color = COMBO_COLORS[(chain - 1) % COMBO_COLORS.length];
-    ui.combo.textContent = "CHAIN × " + chain;
-    ui.combo.style.color = color;
-    ui.combo.style.textShadow = "0 0 14px " + color + ", 0 0 32px " + color;
-    ui.combo.classList.remove("show");
-    void ui.combo.offsetWidth;
-    ui.combo.classList.add("show");
-    S.comboTimer = setTimeout(() => ui.combo.classList.remove("show"), 980);
+  function showCombo(chain, fromChain = chain - 1) {
+    clearTimeout(S.comboStepTimer);
+    clearTimeout(S.comboHideTimer);
+    let first = Math.max(1, Math.min(chain, fromChain + 1));
+    function showStep(value) {
+      let color = COMBO_COLORS[(value - 1) % COMBO_COLORS.length];
+      S.displayChain = value;
+      ui.combo.textContent = "CHAIN × " + value;
+      ui.combo.style.color = color;
+      ui.combo.style.textShadow = "0 0 14px " + color + ", 0 0 32px " + color;
+      ui.combo.classList.remove("show");
+      void ui.combo.offsetWidth;
+      ui.combo.classList.add("show");
+      if (value < chain) {
+        S.comboStepTimer = setTimeout(() => showStep(value + 1), 92);
+      } else {
+        S.comboHideTimer = setTimeout(() => ui.combo.classList.remove("show"), 980);
+      }
+    }
+    showStep(first);
   }
   function dirs(piece) {
     let p = S.player,
@@ -718,6 +729,10 @@
     S.trail = [];
     S.enemyTrail = [];
     S.chain = 0;
+    S.displayChain = 0;
+    clearTimeout(S.comboStepTimer);
+    clearTimeout(S.comboHideTimer);
+    ui.combo.classList.remove("show");
     S.player.slipUsed = false;
     sfx("enemy");
     let used = new Set(),
@@ -902,8 +917,9 @@
     }
     if (attacked) {
       if (gained) {
+        let previousChain = S.chain;
         S.chain += gained;
-        showCombo(S.chain);
+        showCombo(S.chain, previousChain);
       }
       S.flash = 1;
       moves();
@@ -1035,8 +1051,9 @@
     S.elapsed = 0;
     if (continueTurn) {
       if (chainGain) {
+        let previousChain = S.chain;
         S.chain += chainGain;
-        showCombo(S.chain);
+        showCombo(S.chain, previousChain);
       }
       S.flash = 1;
       ui.phase.textContent = "YOUR MOVE";
@@ -1325,10 +1342,10 @@
         ui.beat.textContent = Math.max(0, S.beat - S.elapsed).toFixed(1) + "s";
         if (S.elapsed >= S.beat) enemyBeat();
       } else if (S.phase === "player") {
-        let comboColor = S.chain
-          ? COMBO_COLORS[(S.chain - 1) % COMBO_COLORS.length]
+        let comboColor = S.displayChain
+          ? COMBO_COLORS[(S.displayChain - 1) % COMBO_COLORS.length]
           : "#53f0e4";
-        ui.meter.style.width = Math.min(100, S.chain * (100 / 7)) + "%";
+        ui.meter.style.width = Math.min(100, S.displayChain * (100 / 7)) + "%";
         ui.meter.style.background = comboColor;
         ui.meter.style.boxShadow = "0 0 15px " + comboColor;
       } else if (S.phase === "captured") {
