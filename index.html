@@ -260,6 +260,21 @@
       background: url("assets/its-my-turn-check-thumbnail.png") center / cover;
       backdrop-filter: none;
     }
+    .build-version {
+      position: absolute;
+      z-index: 2;
+      top: max(18px, env(safe-area-inset-top));
+      left: max(18px, env(safe-area-inset-left));
+      margin: 0;
+      padding: 7px 10px;
+      border-left: 3px solid #53f0e4;
+      background: #080a19b8;
+      color: #c9fdf8;
+      font: 500 10px monospace;
+      letter-spacing: 0.14em;
+      backdrop-filter: blur(4px);
+    }
+    .build-version b { color: #ffd166; font-weight: 700; }
     #startScreen .start-menu {
       position: absolute;
       top: 50%;
@@ -380,6 +395,7 @@
         width: min(65vw, 310px);
         min-width: 0;
       }
+      .build-version { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); font-size: 9px; }
       #startScreen .start-menu button { min-height: 57px; padding: 14px 15px; font-size: 16px; }
       .leaderboard-panel { width: min(94vw, 630px); padding: 24px 16px; }
       .leaderboard-row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 9px; }
@@ -478,6 +494,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
+        <p class="build-version">BUILD <b>v0.9.1</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -541,6 +558,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=rainbow-traits-expansion"></script>
+    <script src="game.js?v=v0.9.1"></script>
   </body>
 </html>
