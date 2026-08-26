@@ -98,12 +98,6 @@
       desc: "직선·대각 이동 거리 +2",
     },
     {
-      id: "timeDilation",
-      icon: "◷",
-      name: "SLOW CLOCK",
-      desc: "적 이동 전 딜레이 +0.12초",
-    },
-    {
       id: "royalStep",
       icon: "♚",
       name: "ROYAL STEP",
@@ -545,7 +539,6 @@
     if (S.upgradeMode === "piece") p.piece = o;
     else {
       p.traits.push(o.id);
-      if (o.id === "timeDilation") S.beat += 0.12;
     }
     p.rank++;
     p.xp = 0;
@@ -829,7 +822,6 @@
           ui.hint.textContent = "DEV: " + o.id.toUpperCase() + "로 변경했습니다.";
         } else {
           p.traits.push(o.id);
-          if (o.id === "timeDilation") S.beat += 0.12;
           ui.hint.textContent = "DEV: " + o.name + " 특성을 추가했습니다.";
         }
         moves();
