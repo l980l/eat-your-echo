@@ -77,11 +77,11 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
-  const savedVolume = Number(localStorage.getItem("checkbeat-volume"));
-  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(1, savedVolume / 100)) : 0.38 };
+  const savedVolume = Number(localStorage.getItem("checkbeat-volume-v2"));
+  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(1, savedVolume / 100)) : 1 };
   function setVolume(value) {
     audio.volume = Math.max(0, Math.min(1, value));
-    localStorage.setItem("checkbeat-volume", Math.round(audio.volume * 100));
+    localStorage.setItem("checkbeat-volume-v2", Math.round(audio.volume * 100));
     ui.volumeRange.value = Math.round(audio.volume * 100);
     ui.volumeValue.textContent = Math.round(audio.volume * 100) + "%";
     if (audio.master) audio.master.gain.setTargetAtTime(audio.volume, audio.ctx.currentTime, 0.025);
