@@ -366,6 +366,12 @@
       desc: "착지 시 주변 1칸 충격파",
     },
     {
+      id: "diagonalBurst",
+      icon: "✧",
+      name: "DIAGONAL BURST",
+      desc: "직접 타격 시 착지 칸의 모든 대각선 적 관통",
+    },
+    {
       id: "longStride",
       icon: "↔",
       name: "LONG STRIDE",
@@ -815,18 +821,7 @@
       combo = S.chain + 1,
       dx = Math.sign(m.x - from.x),
       dy = Math.sign(m.y - from.y),
-      caught =
-        p.piece === "rook" && (dx === 0 || dy === 0)
-          ? S.enemies.filter((e) =>
-              dx === 0
-                ? e.x === from.x &&
-                  Math.min(from.y, m.y) <= e.y &&
-                  e.y <= Math.max(from.y, m.y)
-                : e.y === from.y &&
-                  Math.min(from.x, m.x) <= e.x &&
-                  e.x <= Math.max(from.x, m.x),
-            )
-          : S.enemies.filter((e) => e.x === m.x && e.y === m.y);
+      caught = S.enemies.filter((e) => e.x === m.x && e.y === m.y);
     p.x = m.x;
     p.y = m.y;
     sfx("move");
@@ -839,7 +834,7 @@
       attacked ||= r.hits > 0;
       gained += r.kills;
     }
-    if (p.piece === "knight" || p.traits.includes("shockwave")) {
+    if (p.traits.includes("shockwave")) {
       let v = S.enemies.filter(
           (e) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) <= 1,
         );
@@ -849,7 +844,7 @@
       burst(p.x, p.y, "#c274ff", 20);
       traitFx("shockwave", p.x, p.y);
     }
-    if (p.piece === "bishop" && caught.length) {
+    if (p.traits.includes("diagonalBurst") && caught.length) {
       let v = S.enemies.filter((e) => {
         let x = e.x - p.x,
           y = e.y - p.y;
@@ -1012,11 +1007,11 @@
         icon = glyph[o];
         name = o.toUpperCase();
         desc = {
-          knight: "L자 이동 · 착지 충격파",
-          bishop: "대각선 이동 · 대각 폭발",
-          rook: "직선 이동 · 관통 섬광",
-          queen: "8방향 이동 · 왕실의 선",
-          king: "8방향 이동 · 근접 지배",
+          knight: "L자 이동",
+          bishop: "대각선 3칸 이동",
+          rook: "직선 3칸 이동",
+          queen: "8방향 3칸 이동",
+          king: "8방향 1칸 이동",
         }[o];
       } else {
         icon = o.icon;
@@ -1423,9 +1418,9 @@
     S.phase = "devpick";
     let pieceInfo = {
         pawn: "8방향 1칸",
-        knight: "L자 이동 · 착지 충격파",
-        bishop: "대각선 3칸 · 대각 폭발",
-        rook: "직선 3칸 · 관통 섬광",
+        knight: "L자 이동",
+        bishop: "대각선 3칸 이동",
+        rook: "직선 3칸 이동",
         queen: "8방향 3칸",
         king: "8방향 1칸",
       },
