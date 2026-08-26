@@ -37,6 +37,8 @@
       leaderboardList: $("#leaderboardList"),
       leaderboardStatus: $("#leaderboardStatus"),
       scoreSubmit: $("#scoreSubmit"),
+      scoreSubmitTitle: $("#scoreSubmitTitle"),
+      scoreSubmitIntro: $("#scoreSubmitIntro"),
       scoreName: $("#scoreName"),
       scoreMessage: $("#scoreMessage"),
       scoreButton: $("#submitScoreButton"),
@@ -99,7 +101,8 @@
     };
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
-    LEADERBOARD_LIMIT = 10;
+    LEADERBOARD_LIMIT = 10,
+    LEADERBOARD_STORE_LIMIT = 10000;
   let leaderboardRows = [];
   async function leaderboardRequest(path, options = {}) {
     let response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
@@ -166,6 +169,14 @@
   function isTopTenScore(score, rows = leaderboardRows) {
     return score > 0 && (rows.length < LEADERBOARD_LIMIT || score > rows[rows.length - 1].score);
   }
+  async function leaderboardCutoff() {
+    let rows = await leaderboardRequest(
+      "leaderboard?select=score&order=score.desc,created_at.asc&offset=" +
+        (LEADERBOARD_STORE_LIMIT - 1) +
+        "&limit=1",
+    );
+    return rows[0]?.score ?? null;
+  }
   async function openRanking() {
     ui.ranking.classList.remove("hidden");
     try {
@@ -188,13 +199,26 @@
     ui.scoreSubmit.classList.add("hidden");
     ui.scoreStatus.textContent = "글로벌 랭킹을 확인하는 중…";
     try {
-      let rows = await loadLeaderboard();
-      if (isTopTenScore(score, rows)) {
+      let [rows, cutoff] = await Promise.all([loadLeaderboard(), leaderboardCutoff()]),
+        topTen = isTopTenScore(score, rows),
+        qualifies = score > 0 && (cutoff === null || score > cutoff);
+      if (qualifies) {
+        S.scoreSubmissionTopTen = topTen;
         ui.scoreSubmit.classList.remove("hidden");
-        ui.scoreStatus.textContent = "현재 TOP 10 진입권입니다. 기록을 남겨주세요.";
+        ui.scoreSubmitTitle.textContent = topTen ? "TOP 10 달성!" : "TOP 10,000 진입!";
+        ui.scoreSubmitIntro.textContent = topTen
+          ? "이 기록을 남기고 한 줄 소감을 적어주세요."
+          : "이 기록을 글로벌 랭킹에 남겨주세요.";
+        ui.scoreMessage.disabled = !topTen;
+        ui.scoreMessage.placeholder = topTen
+          ? "한 줄 소감 (선택, 최대 120자)"
+          : "한 줄 소감은 TOP 10만 작성할 수 있습니다.";
+        ui.scoreStatus.textContent = topTen
+          ? "현재 TOP 10 진입권입니다. 기록을 남겨주세요."
+          : "현재 TOP 10,000 진입권입니다. 기록을 남겨주세요.";
         ui.scoreName.focus();
       } else {
-        ui.scoreStatus.textContent = "이번 기록은 TOP 10 밖입니다. 다시 도전해보세요.";
+        ui.scoreStatus.textContent = "이번 기록은 TOP 10,000 밖입니다. 다시 도전해보세요.";
       }
     } catch (_) {
       ui.scoreStatus.textContent = "랭킹 확인에 실패했습니다. 연결 후 다시 시도해주세요.";
@@ -202,7 +226,7 @@
   }
   async function submitScore() {
     let name = ui.scoreName.value.trim(),
-      message = ui.scoreMessage.value.trim(),
+      message = S.scoreSubmissionTopTen ? ui.scoreMessage.value.trim() : "",
       score = S.finalScore;
     if (!name) {
       ui.scoreStatus.textContent = "닉네임을 입력해주세요.";
