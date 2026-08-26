@@ -29,6 +29,7 @@
       combo: $("#comboToast"),
       ranking: $("#rankingScreen"),
       rankingButton: $("#rankingButton"),
+      gameOverRanking: $("#gameOverRanking"),
       rankingClose: $("#rankingClose"),
       leaderboardList: $("#leaderboardList"),
       leaderboardStatus: $("#leaderboardStatus"),
@@ -1389,6 +1390,7 @@
     ui.over.classList.add("hidden");
   });
   ui.rankingButton.addEventListener("click", openRanking);
+  ui.gameOverRanking.addEventListener("click", openRanking);
   ui.rankingClose.addEventListener("click", closeRanking);
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
