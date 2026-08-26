@@ -798,7 +798,7 @@
     g.stroke();
     g.shadowBlur = 0;
     g.fillStyle = enemy ? "#ffd3df" : "#f1ffff";
-    g.font = "700 " + s * 0.34 + "px Georgia";
+    g.font = "700 " + s * 0.34 + "px 'Gowun Batang', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y + 1);
@@ -953,7 +953,7 @@
       g.save();
       g.globalAlpha = 1 - t;
       g.fillStyle = "#f5efff";
-      g.font = "700 " + s * 0.45 + "px Georgia";
+      g.font = "700 " + s * 0.45 + "px 'Gowun Batang', serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText(glyph[S.player.piece], q.x, q.y);

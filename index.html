@@ -9,6 +9,9 @@
     <meta name="theme-color" content="#08091a" />
     <title>It’s My Turn… Check! — turn-based chess survival</title>
     <link rel="stylesheet" href="style.css?v=mobile-layout" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
     <style>
       #app {
         position: fixed;
@@ -247,18 +250,29 @@
     .stats {
       justify-self: auto;
     }
+    #app,
+    #app * {
+      font-family: "Gowun Batang", serif !important;
+    }
+    #startScreen {
+      background:
+        linear-gradient(90deg, #050614dd, #09081ab8),
+        url("assets/its-my-turn-check-thumbnail.png") center / cover;
+    }
+    #startScreen .panel {
+      background: linear-gradient(135deg, #11122be8, #090a18ed);
+      backdrop-filter: blur(4px);
+    }
     #comboToast {
       position: absolute;
       z-index: 7;
-      top: max(20px, env(safe-area-inset-top));
+      top: max(76px, calc(env(safe-area-inset-top) + 54px));
       left: 50%;
       transform: translate(-50%, -18px) scale(0.72);
       opacity: 0;
       color: #fff;
-      font:
-        700 clamp(26px, 6vw, 50px)/1 "DM Mono",
-        monospace;
-      letter-spacing: 0.08em;
+      font: 700 clamp(28px, 5vw, 48px) / 1 "Gowun Batang", serif;
+      letter-spacing: -0.04em;
       text-shadow:
         0 0 14px #53f0e4,
         0 0 32px #f45cf4;
@@ -291,7 +305,7 @@
     }
     @media (max-width: 560px) {
       #comboToast {
-        top: max(14px, env(safe-area-inset-top));
+        top: max(86px, calc(env(safe-area-inset-top) + 66px));
         font-size: 28px;
       }
       .hud {
@@ -393,6 +407,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=minimal-hud-combo"></script>
+    <script src="game.js?v=gowun-batang-finish"></script>
   </body>
 </html>
