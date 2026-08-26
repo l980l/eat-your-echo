@@ -77,13 +77,14 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
-  const savedVolume = Number(localStorage.getItem("checkbeat-volume-v3"));
-  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(2, savedVolume / 100)) : 2 };
+  const savedVolume = Number(localStorage.getItem("checkbeat-volume-v4"));
+  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(2, savedVolume / 50)) : 2 };
   function setVolume(value) {
-    audio.volume = Math.max(0, Math.min(2, value));
-    localStorage.setItem("checkbeat-volume-v3", Math.round(audio.volume * 100));
-    ui.volumeRange.value = Math.round(audio.volume * 100);
-    ui.volumeValue.textContent = Math.round(audio.volume * 100) + "%";
+    let slider = Math.max(0, Math.min(100, value));
+    audio.volume = slider / 50;
+    localStorage.setItem("checkbeat-volume-v4", Math.round(slider));
+    ui.volumeRange.value = Math.round(slider);
+    ui.volumeValue.textContent = Math.round(slider) + "%";
     if (audio.master) audio.master.gain.setTargetAtTime(audio.volume, audio.ctx.currentTime, 0.025);
   }
   function audioReady() {
@@ -1112,9 +1113,9 @@
   ui.choices.forEach((b) =>
     b.addEventListener("click", () => chooseUpgrade(Number(b.dataset.choice))),
   );
-  setVolume(audio.volume);
+  setVolume(Number.isFinite(savedVolume) ? savedVolume : 100);
   ui.soundToggle.addEventListener("click", () => ui.soundPanel.classList.toggle("hidden"));
-  ui.volumeRange.addEventListener("input", (e) => setVolume(Number(e.target.value) / 100));
+  ui.volumeRange.addEventListener("input", (e) => setVolume(Number(e.target.value)));
   reset();
   requestAnimationFrame(tick);
 })();
