@@ -26,6 +26,7 @@
       soundPanel: $("#soundPanel"),
       volumeRange: $("#volumeRange"),
       volumeValue: $("#volumeValue"),
+      combo: $("#comboToast"),
     },
     glyph = {
       pawn: "♟",
@@ -239,6 +240,14 @@
   function hud() {
     ui.hp.textContent = S.wave;
     ui.xp.textContent = S.player.xp + " / " + (3 + S.player.rank * 2);
+  }
+  function showCombo(chain) {
+    clearTimeout(S.comboTimer);
+    ui.combo.textContent = "CHAIN × " + chain;
+    ui.combo.classList.remove("show");
+    void ui.combo.offsetWidth;
+    ui.combo.classList.add("show");
+    S.comboTimer = setTimeout(() => ui.combo.classList.remove("show"), 980);
   }
   function dirs(piece) {
     let p = S.player,
@@ -606,6 +615,7 @@
     }
     if (gained) {
       S.chain++;
+      showCombo(S.chain);
       S.flash = 1;
       moves();
       ui.hint.textContent =
@@ -724,6 +734,7 @@
     S.elapsed = 0;
     if (continueTurn) {
       S.chain++;
+      showCombo(S.chain);
       S.flash = 1;
       ui.phase.textContent = "YOUR MOVE";
       ui.beat.textContent = "MOVE NOW";
