@@ -136,10 +136,16 @@
     source.connect(gain).connect(audio.master);
     source.start();
   }
-  function sfx(kind) {
+  function sfx(kind, chain = 1) {
     if (!audio.ctx) return;
     if (kind === "move") tone(330, 0.07, "triangle", 0.13, 1.35);
-    if (kind === "capture") { tone(180, 0.12, "sawtooth", 0.22, 0.55); tone(620, 0.09, "square", 0.11, 0.72); noise(0.07, 0.12); }
+    if (kind === "capture") {
+      // Half a semitone per chain, capped at a clean fifth above the base sound.
+      let pitch = Math.pow(2, Math.min(12, Math.max(0, chain - 1)) / 24);
+      tone(180 * pitch, 0.12, "sawtooth", 0.22, 0.55);
+      tone(620 * pitch, 0.09, "square", 0.11, 0.72);
+      noise(0.07, 0.12);
+    }
     if (kind === "enemy") { tone(95, 0.11, "square", 0.1, 0.78); noise(0.045, 0.04); }
     if (kind === "upgrade") { tone(440, 0.13, "triangle", 0.16, 1.5); tone(660, 0.23, "sine", 0.13, 1.5); }
     if (kind === "death") { tone(180, 0.6, "sawtooth", 0.25, 0.18); noise(0.28, 0.14); }
@@ -693,7 +699,7 @@
       p.xp++;
       traitFx("spark", p.x, p.y);
     }
-    if (attacked) sfx("capture");
+    if (attacked) sfx("capture", S.chain + Math.max(1, gained));
     hud();
     let reroll = (p.rank + 1) % 5 === 0;
     if (
