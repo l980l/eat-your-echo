@@ -625,17 +625,23 @@
     let p = S.player,
       pieces = ["knight", "bishop", "rook", "queen", "king"],
       reroll = p.rank > 0 && (p.rank + 1) % 5 === 0;
-    if (p.rank === 0 || reroll) {
-      let pool = reroll ? pieces.filter((piece) => piece !== p.piece) : pieces,
-        piece = pool[Math.floor(Math.random() * pool.length)];
+    if (p.rank === 0) {
+      let piece = pieces[Math.floor(Math.random() * pieces.length)];
       S.upgradeMode = "piece";
       S.upgradeOptions = [piece];
-      ui.upgradeEyebrow.textContent = reroll
-        ? "FATED REFORGE · LEVEL " + (p.rank + 1)
-        : "DESTINY PROMOTION";
-      ui.upgradeTitle.textContent = reroll
-        ? "기물이 다시 태어납니다"
-        : "운명의 기물을 받습니다";
+      ui.upgradeEyebrow.textContent = "DESTINY PROMOTION";
+      ui.upgradeTitle.textContent = "운명의 기물을 받습니다";
+      renderChoices();
+    } else if (reroll) {
+      S.upgradeMode = "fork";
+      S.upgradeOptions = [
+        { kind: "piece", icon: "♛", name: "REFORGE", desc: "다른 기물 하나를 무작위로 변경" },
+        ...(TRAITS.some((t) => !p.traits.includes(t.id))
+          ? [{ kind: "trait", icon: "✦", name: "AUGMENT", desc: "무작위 특성 3개 중 하나를 선택" }]
+          : []),
+      ];
+      ui.upgradeEyebrow.textContent = "MILESTONE · LEVEL " + (p.rank + 1);
+      ui.upgradeTitle.textContent = "기물 변경 또는 특성 뽑기";
       renderChoices();
     } else {
       let pool = TRAITS.filter((t) => !p.traits.includes(t.id));
@@ -657,7 +663,11 @@
       b.style.display = o ? "block" : "none";
       if (!o) return;
       let icon, name, desc;
-      if (S.upgradeMode === "piece") {
+      if (S.upgradeMode === "fork") {
+        icon = o.icon;
+        name = o.name;
+        desc = o.desc;
+      } else if (S.upgradeMode === "piece") {
         icon = glyph[o];
         name = o.toUpperCase();
         desc = {
@@ -681,6 +691,24 @@
     let p = S.player,
       o = S.upgradeOptions[i];
     if (!o) return;
+    if (S.upgradeMode === "fork") {
+      if (o.kind === "piece") {
+        let pool = ["knight", "bishop", "rook", "queen", "king"].filter((piece) => piece !== p.piece);
+        S.upgradeMode = "piece";
+        S.upgradeOptions = [pool[Math.floor(Math.random() * pool.length)]];
+        ui.upgradeEyebrow.textContent = "FATED REFORGE · LEVEL " + (p.rank + 1);
+        ui.upgradeTitle.textContent = "기물이 다시 태어납니다";
+      } else {
+        let pool = TRAITS.filter((t) => !p.traits.includes(t.id));
+        S.upgradeMode = "trait";
+        S.upgradeOptions = chooseRandom(pool, Math.min(3, pool.length));
+        ui.upgradeEyebrow.textContent = "RANDOM AUGMENTS";
+        ui.upgradeTitle.textContent = "강화 특성을 선택하세요";
+      }
+      S.upgradeLock = performance.now() + 300;
+      renderChoices();
+      return;
+    }
     if (S.upgradeMode === "piece") p.piece = o;
     else {
       p.traits.push(o.id);
