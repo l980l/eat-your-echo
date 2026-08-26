@@ -391,6 +391,10 @@
     .leaderboard-actions button { margin-top: 18px; }
     .secondary-button { border-color: #ffffff44; background: #171a32; color: #dce3ff; box-shadow: none; }
     @media (max-width: 560px) {
+      #startScreen {
+        background-image: url("assets/its-my-turn-check-thumbnail-mobile.png");
+        background-position: center;
+      }
       #startScreen .start-menu {
         right: max(12px, env(safe-area-inset-right));
         width: min(65vw, 310px);
@@ -490,7 +494,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.9.8</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.9.9</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
