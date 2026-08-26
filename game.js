@@ -468,14 +468,15 @@
             : p.rank === 3
               ? ["pawn", "knight", "rook", "bishop", "bishop", "king"]
               : ["pawn", "knight", "rook", "bishop", "king", "queen"];
-    let maxHp =
-      S.wave >= 40 && Math.random() < 0.18
-        ? 3
-        : S.wave >= 28 && Math.random() < 0.42
-          ? 2
-          : S.wave >= 14 && Math.random() < 0.22
-            ? 2
-            : 1;
+    // Durability tiers use the same seven-color rainbow as the chain.
+    // Heavier tiers arrive gradually, then become more common over time.
+    let highestTier =
+        S.wave < 14 ? 1 : Math.min(7, 2 + Math.floor((S.wave - 14) / 16)),
+      heavyChance = S.wave < 14 ? 0 : Math.min(0.7, 0.22 + (S.wave - 14) * 0.008),
+      maxHp =
+        Math.random() < heavyChance
+          ? 2 + Math.floor(Math.pow(Math.random(), 1.65) * (highestTier - 1))
+          : 1;
     S.enemies.push({
       x,
       y,
@@ -897,31 +898,28 @@
   function piece(x, y, t, enemy = false, hp = 1, maxHp = 1) {
     let q = pos(x, y),
       s = size(),
-      col = enemy ? "#fa5c8a" : "#53f0e4";
+      durability = COMBO_COLORS[Math.max(0, Math.min(6, maxHp - 1))],
+      col = enemy ? durability : "#53f0e4",
+      health = Math.max(0, Math.min(1, hp / maxHp));
     g.save();
     g.shadowBlur = enemy ? 18 : 28;
     g.shadowColor = col;
-    g.fillStyle = enemy ? "#31152a" : "#123d4d";
+    g.globalAlpha = enemy ? 0.16 + health * 0.18 : 1;
+    g.fillStyle = enemy ? col : "#123d4d";
     g.beginPath();
     g.arc(q.x, q.y, s * 0.31, 0, 7);
     g.fill();
+    g.globalAlpha = 1;
     g.lineWidth = 2;
     g.strokeStyle = col;
     g.stroke();
     g.shadowBlur = 0;
-    g.fillStyle = enemy ? "#ffd3df" : "#f1ffff";
+    g.globalAlpha = enemy ? 0.68 + health * 0.32 : 1;
+    g.fillStyle = enemy ? col : "#f1ffff";
     g.font = "700 " + s * 0.34 + "px 'Gowun Batang', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y + 1);
-    if (enemy && maxHp > 1) {
-      let label = hp + "/" + maxHp;
-      g.font = "700 " + Math.max(10, s * 0.15) + "px monospace";
-      g.fillStyle = "#ffd166";
-      g.shadowColor = "#ff9f43";
-      g.shadowBlur = 8;
-      g.fillText(label, q.x, q.y - s * 0.43);
-    }
     g.restore();
   }
   function draw() {
