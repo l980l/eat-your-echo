@@ -411,7 +411,7 @@
       id: "slipstream",
       icon: "〰",
       name: "SLIPSTREAM",
-      desc: "매 적 턴 첫 비처치 이동 후 한 번 더 이동",
+      desc: "3적 턴마다 첫 비처치 이동 후 한 번 더 이동",
     },
   ];
   function reset() {
@@ -427,7 +427,7 @@
     S.trail = [];
     S.enemyTrail = [];
     S.upgradeOptions = [];
-    S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false };
+    S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false, slipCooldown: 0 };
     S.enemies = [
       { x: 0, y: -6, type: "pawn", face: { x: 0, y: 1 }, hp: 1, maxHp: 1 },
       { x: -2, y: -7, type: "pawn", face: { x: 0, y: 1 }, hp: 1, maxHp: 1 },
@@ -748,6 +748,7 @@
     clearTimeout(S.comboHideTimer);
     ui.combo.classList.remove("show");
     S.player.slipUsed = false;
+    S.player.slipCooldown = Math.max(0, (S.player.slipCooldown || 0) - 1);
     sfx("enemy");
     let used = new Set(),
       captured = false,
@@ -943,8 +944,9 @@
           : "장갑 적을 타격했습니다! 마무리할 때까지 한 번 더 움직이세요.";
       return;
     }
-    if (p.traits.includes("slipstream") && !p.slipUsed) {
+    if (p.traits.includes("slipstream") && !p.slipUsed && !p.slipCooldown) {
       p.slipUsed = true;
+      p.slipCooldown = 2;
       S.flash = 1;
       moves();
       traitFx("slip", p.x, p.y);
