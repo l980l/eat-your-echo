@@ -470,13 +470,9 @@
       S.chain++;
       S.flash = 1;
       moves();
-      if (
-        S.moves.some((m) => S.enemies.some((e) => e.x === m.x && e.y === m.y))
-      ) {
-        ui.hint.textContent =
-          "연속 수 ×" + S.chain + "! 적을 잡으면 다시 움직일 수 있습니다.";
-        return;
-      }
+      ui.hint.textContent =
+        "연속 수 ×" + S.chain + "! 한 번 더 움직일 수 있습니다.";
+      return;
     }
     S.phase = "enemy";
     S.elapsed = 0;
