@@ -691,7 +691,8 @@
     S.player.slipUsed = false;
     sfx("enemy");
     let used = new Set(),
-      captured = false;
+      captured = false,
+      killer = null;
     S.enemies
       .sort((a, b) => dist(a, S.player) - dist(b, S.player))
       .forEach((e) => {
@@ -699,7 +700,20 @@
           n = toward(e);
         if (n.x === S.player.x && n.y === S.player.y) {
           captured = true;
-          burst(e.x, e.y, "#ff5577", 28);
+          if (!killer && S.grace <= 0) {
+            killer = e;
+            e.x = S.player.x;
+            e.y = S.player.y;
+            used.add(K(e.x, e.y));
+            S.enemyTrail.push({
+              x1: from.x,
+              y1: from.y,
+              x2: e.x,
+              y2: e.y,
+              via: e.type === "knight" ? knightCorner(from, e) : null,
+            });
+            burst(e.x, e.y, "#ff5577", 28);
+          }
           return;
         }
         if (!used.has(K(n.x, n.y))) {
@@ -710,7 +724,15 @@
             S.enemyTrail.push({ x1: from.x, y1: from.y, x2: e.x, y2: e.y, via: e.type === "knight" ? knightCorner(from, e) : null });
         }
       });
-    if (captured && S.grace <= 0) return die();
+    if (captured && S.grace <= 0) {
+      S.phase = "captured";
+      S.captureTimer = 0.34;
+      S.flash = 0;
+      ui.phase.textContent = "CHECKMATE";
+      ui.beat.textContent = "CAPTURED";
+      ui.hint.textContent = "적 말이 당신의 칸을 점령했습니다.";
+      return;
+    }
     S.grace = Math.max(0, S.grace - 1);
     for (let i = 0; i < (S.wave % 4 === 0 ? 2 : 1); i++) spawn();
     hud();
@@ -1214,8 +1236,9 @@
       g.lineWidth = active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
     });
+    if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1));
-    if (S.phase !== "dead") piece(S.player.x, S.player.y, S.player.piece);
+    if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
         t = 1 - S.death / 1.1;
@@ -1283,6 +1306,11 @@
       } else if (S.phase === "player") {
         ui.meter.style.width = "100%";
         ui.meter.style.background = "#53f0e4";
+      } else if (S.phase === "captured") {
+        S.captureTimer -= dt;
+        ui.meter.style.width = Math.max(0, S.captureTimer / 0.34) * 100 + "%";
+        ui.meter.style.background = "#ff315d";
+        if (S.captureTimer <= 0) die();
       } else if (S.phase === "dead") {
         S.death -= dt;
         ui.meter.style.width = Math.max(0, S.death / 1.1) * 100 + "%";
