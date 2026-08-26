@@ -2,7 +2,7 @@
 
 > One move. They advance. Check the board.
 
-**It’s My Turn… Check!**는 한 번의 수로 끝없이 다가오는 적 기물을 돌파하는 턴 기반 체스 생존 게임입니다. 적을 처치하면 추가 이동을 얻고, 랜덤 승진과 특성 조합으로 자신만의 기물을 만듭니다.
+It’s My Turn… Check!는 다가오는 적 기물을 돌파하는 턴 기반 체스 생존 게임입니다. 적을 처치하면 추가 이동을 얻고, 랜덤 승진과 특성 조합으로 자신만의 기물을 만듭니다.
 
 Play: https://l980l.github.io/its-my-turn-check/
 
