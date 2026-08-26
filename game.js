@@ -77,11 +77,11 @@
           ? { x: b.x, y: a.y }
           : { x: a.x, y: b.y }
         : null;
-  const savedVolume = Number(localStorage.getItem("checkbeat-volume-v2"));
-  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(1, savedVolume / 100)) : 1 };
+  const savedVolume = Number(localStorage.getItem("checkbeat-volume-v3"));
+  const audio = { ctx: null, master: null, timer: null, step: 0, volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(2, savedVolume / 100)) : 2 };
   function setVolume(value) {
-    audio.volume = Math.max(0, Math.min(1, value));
-    localStorage.setItem("checkbeat-volume-v2", Math.round(audio.volume * 100));
+    audio.volume = Math.max(0, Math.min(2, value));
+    localStorage.setItem("checkbeat-volume-v3", Math.round(audio.volume * 100));
     ui.volumeRange.value = Math.round(audio.volume * 100);
     ui.volumeValue.textContent = Math.round(audio.volume * 100) + "%";
     if (audio.master) audio.master.gain.setTargetAtTime(audio.volume, audio.ctx.currentTime, 0.025);
@@ -91,8 +91,14 @@
     if (!audio.ctx) {
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
       audio.master = audio.ctx.createGain();
+      let limiter = audio.ctx.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.knee.value = 8;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.16;
       audio.master.gain.value = audio.volume;
-      audio.master.connect(audio.ctx.destination);
+      audio.master.connect(limiter).connect(audio.ctx.destination);
     }
     if (audio.ctx.state === "suspended") audio.ctx.resume();
     return audio.ctx;
