@@ -55,6 +55,14 @@
       queen: "♛",
       king: "♚",
     },
+    pieceMark = {
+      pawn: "P",
+      knight: "N",
+      bishop: "B",
+      rook: "R",
+      queen: "Q",
+      king: "K",
+    },
     S = {
       running: false,
       dev: false,
@@ -1084,10 +1092,17 @@
     g.shadowBlur = 0;
     g.globalAlpha = enemy ? 0.68 + health * 0.32 : 1;
     g.fillStyle = enemy ? col : "#f1ffff";
-    g.font = "700 " + s * 0.34 + "px 'Gowun Batang', serif";
+    g.shadowColor = "#050611";
+    g.shadowBlur = 3;
+    g.font = "700 " + s * 0.46 + "px Georgia, 'Times New Roman', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y + 1);
+    g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y - s * 0.035);
+    g.globalAlpha = 1;
+    g.shadowBlur = 0;
+    g.fillStyle = enemy ? col : "#53f0e4";
+    g.font = "700 " + Math.max(9, s * 0.14) + "px monospace";
+    g.fillText(pieceMark[t], q.x, q.y + s * 0.285);
     g.restore();
   }
   function draw() {
