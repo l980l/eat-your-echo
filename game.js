@@ -251,15 +251,11 @@
         [1, -1],
         [-1, 1],
         [-1, -1],
-      ];
-    if (p.traits?.includes("royalStep"))
-      return king.flatMap(([x, y]) => [
-        [x, y],
-        [x * 2, y * 2],
-      ]);
-    if (piece === "pawn" || piece === "king") return king;
-    if (piece === "knight")
-      return [
+      ],
+      base;
+    if (piece === "pawn" || piece === "king") base = king;
+    else if (piece === "knight")
+      base = [
         [1, 2],
         [2, 1],
         [2, -1],
@@ -269,7 +265,8 @@
         [-2, 1],
         [-1, 2],
       ];
-    let b =
+    else {
+      let b =
         piece === "bishop"
           ? [
               [1, 1],
@@ -285,10 +282,14 @@
                 [0, 1],
                 [0, -1],
               ],
-      range = p.traits?.includes("longStride") ? 5 : 3;
-    return b.flatMap(([x, y]) =>
-      Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
-    );
+        range = p.traits?.includes("longStride") ? 5 : 3;
+      base = b.flatMap(([x, y]) =>
+        Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
+      );
+    }
+    if (!p.traits?.includes("royalStep")) return base;
+    let royal = king.flatMap(([x, y]) => [[x, y], [x * 2, y * 2]]);
+    return [...base, ...royal].filter(([x, y], i, all) => all.findIndex(([a, b]) => a === x && b === y) === i);
   }
   function moves() {
     let p = S.player;
