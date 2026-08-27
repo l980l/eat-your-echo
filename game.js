@@ -82,6 +82,11 @@
       camera: { x: 0, y: 0 },
       player: null,
       enemies: [],
+      items: [],
+      itemCooldown: 0,
+      invincibleBeats: 0,
+      rangeBoostMoves: 0,
+      extendedMoves: 0,
       moves: [],
       moveReach: { x: 1, y: 1 },
       particles: [],
@@ -99,6 +104,13 @@
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
     COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
+    FIELD_ITEMS = {
+      aegis: { icon: "✦", name: "KING'S AEGIS", color: "#8eeaff" },
+      stride: { icon: "↔", name: "LONG STRIDE RUNE", color: "#7dffb2" },
+      necklace: { icon: "☾", name: "SILVER NECKLACE", color: "#e6e9ff" },
+      judgement: { icon: "ϟ", name: "JUDGEMENT", color: "#ffd166" },
+      chest: { icon: "▣", name: "TREASURE CHEST", color: "#ffba47" },
+    },
     knightCorner = (a, b) => {
       let dx = Math.abs(a.x - b.x),
         dy = Math.abs(a.y - b.y),
@@ -473,6 +485,8 @@
   function reset() {
     S.phase = "enemy";
     S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = S.riskBeats = 0;
+    S.items = [];
+    S.itemCooldown = S.invincibleBeats = S.rangeBoostMoves = S.extendedMoves = 0;
     S.displayChain = 0;
     S.devSpeed = 1;
     S.beat = 0.45;
@@ -533,11 +547,13 @@
         [-1, -1],
       ],
       base;
-    let longStride = p.traits?.includes("longStride");
+    let longStride = p.traits?.includes("longStride"),
+      fieldStride = S.rangeBoostMoves > 0,
+      extraRange = fieldStride ? 2 : 0;
     if (piece === "pawn" || piece === "king")
-      base = longStride
-        ? king.flatMap(([x, y]) => [[x, y], [x * 2, y * 2], [x * 3, y * 3]])
-        : king;
+      base = king.flatMap(([x, y]) =>
+        Array.from({ length: (longStride ? 3 : 1) + extraRange }, (_, i) => [x * (i + 1), y * (i + 1)]),
+      );
     else if (piece === "knight") {
       base = [
         [1, 2],
@@ -549,10 +565,15 @@
         [-2, 1],
         [-1, 2],
       ];
-      if (longStride)
+      if (longStride || fieldStride)
         base.push(
           [1, 3], [3, 1], [3, -1], [1, -3],
           [-1, -3], [-3, -1], [-3, 1], [-1, 3],
+        );
+      if (fieldStride)
+        base.push(
+          [1, 4], [4, 1], [4, -1], [1, -4],
+          [-1, -4], [-4, -1], [-4, 1], [-1, 4],
         );
     }
     else {
@@ -572,7 +593,7 @@
                 [0, 1],
                 [0, -1],
               ],
-        range = longStride ? 5 : 3;
+        range = (longStride ? 5 : 3) + extraRange;
       base = b.flatMap(([x, y]) =>
         Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
@@ -667,12 +688,59 @@
     if (dead.length) {
       S.player.xp += dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0);
       S.kills += dead.length;
+      dead.forEach((e) => tryDropItem(e.x, e.y));
     }
     return {
       hits: victims.length,
       kills: dead.length,
       points: dead.reduce((sum, e) => sum + 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1), 0),
     };
+  }
+  function rollFieldItem() {
+    let roll = Math.random() * 100;
+    return roll < 40 ? "chest" : roll < 65 ? "necklace" : roll < 85 ? "stride" : roll < 95 ? "aegis" : "judgement";
+  }
+  function tryDropItem(x, y) {
+    if (S.items.length || S.itemCooldown || Math.random() >= 0.08) return;
+    let spots = [
+      [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+    ]
+      .map(([dx, dy]) => ({ x: x + dx, y: y + dy }))
+      .filter((q) => q.x !== S.player.x || q.y !== S.player.y)
+      .filter((q) => !S.enemies.some((e) => e.x === q.x && e.y === q.y))
+      .filter((q) => !S.items.some((item) => item.x === q.x && item.y === q.y));
+    if (!spots.length) return;
+    let type = rollFieldItem(),
+      q = spots[Math.floor(Math.random() * spots.length)];
+    S.items.push({ type, x: q.x, y: q.y, life: 8 });
+    S.itemCooldown = 2;
+    burst(q.x, q.y, FIELD_ITEMS[type].color, 14);
+  }
+  function collectItemsAt(x, y, combo, hitSet) {
+    let picked = S.items.filter((item) => item.x === x && item.y === y),
+      result = { hits: 0, kills: 0, points: 0, names: [] };
+    if (!picked.length) return result;
+    S.items = S.items.filter((item) => item.x !== x || item.y !== y);
+    picked.forEach((item) => {
+      let data = FIELD_ITEMS[item.type];
+      result.names.push(data.name);
+      burst(x, y, data.color, 24);
+      if (item.type === "aegis") S.invincibleBeats = Math.max(S.invincibleBeats, 2);
+      if (item.type === "stride") S.rangeBoostMoves = Math.max(S.rangeBoostMoves, 3);
+      if (item.type === "necklace") S.extendedMoves = Math.max(S.extendedMoves, 2);
+      if (item.type === "chest") {
+        let gold = S.wave * 100;
+        S.score += gold;
+        result.names[result.names.length - 1] += " +" + gold.toLocaleString() + "점";
+      }
+      if (item.type === "judgement") {
+        let hit = damageEnemies([...S.enemies], combo, hitSet);
+        result.hits += hit.hits;
+        result.kills += hit.kills;
+        result.points += hit.points;
+      }
+    });
+    return result;
   }
   function deathBurst(x, y) {
     for (let i = 0; i < 34; i++) {
@@ -811,6 +879,10 @@
   }
   function enemyBeat() {
     S.wave++;
+    let invulnerable = S.invincibleBeats > 0;
+    if (invulnerable) S.invincibleBeats--;
+    S.itemCooldown = Math.max(0, S.itemCooldown - 1);
+    S.items = S.items.filter((item) => --item.life > 0);
     S.trail = [];
     S.enemyTrail = [];
     S.chain = 0;
@@ -831,7 +903,7 @@
           n = toward(e);
         if (n.x === S.player.x && n.y === S.player.y) {
           captured = true;
-          if (!killer && S.grace <= 0) {
+          if (!killer && S.grace <= 0 && !invulnerable) {
             killer = e;
             e.x = S.player.x;
             e.y = S.player.y;
@@ -855,7 +927,7 @@
             S.enemyTrail.push({ x1: from.x, y1: from.y, x2: e.x, y2: e.y, via: e.type === "knight" ? knightCorner(from, e) : null });
         }
       });
-    if (captured && S.grace <= 0) {
+    if (captured && S.grace <= 0 && !invulnerable) {
       S.phase = "captured";
       S.captureTimer = 0.34;
       S.flash = 0;
@@ -864,11 +936,12 @@
       ui.hint.textContent = "적 말이 당신의 칸을 점령했습니다.";
       return;
     }
+    if (captured && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 20);
     S.grace = Math.max(0, S.grace - 1);
     for (let i = 0; i < (S.wave % 4 === 0 ? 2 : 1); i++) spawn();
     if (S.riskBeats > 0) S.riskBeats--;
     hud();
-    if (S.wave % 10 === 0) {
+    if (S.wave % 20 === 0) {
       offerRisk();
       return;
     }
@@ -907,6 +980,7 @@
     if (S.phase !== "player") return;
     let p = S.player,
       from = { x: p.x, y: p.y },
+      usedRangeBoost = S.rangeBoostMoves > 0,
       gained = 0,
       earned = 0,
       scoreGain = 0,
@@ -918,11 +992,16 @@
       caught = S.enemies.filter((e) => e.x === m.x && e.y === m.y);
     p.x = m.x;
     p.y = m.y;
+    if (usedRangeBoost) S.rangeBoostMoves--;
     sfx("move");
     S.trail.push({ x1: from.x, y1: from.y, x2: p.x, y2: p.y, via: p.piece === "knight" ? knightCorner(from, p) : null, life: 1 });
     if (p.traits.includes("longStride") && (Math.abs(m.x - from.x) > 1 || Math.abs(m.y - from.y) > 1))
       traitFx("stride", p.x, p.y, { dx, dy });
     if (p.traits.includes("royalStep")) traitFx("royal", p.x, p.y);
+    let pickup = collectItemsAt(p.x, p.y, combo, struck);
+    attacked ||= pickup.hits > 0;
+    gained += pickup.kills;
+    earned += pickup.points;
     if (caught.length) {
       let r = damageEnemies(caught, combo, struck);
       attacked ||= r.hits > 0;
@@ -1042,6 +1121,13 @@
         gained
           ? "연속 수 ×" + S.chain + "! +" + scoreGain.toLocaleString() + "점 · 한 번 더 움직일 수 있습니다."
           : "장갑 적을 타격했습니다! 마무리할 때까지 한 번 더 움직이세요.";
+      return;
+    }
+    if (S.extendedMoves > 0) {
+      S.extendedMoves--;
+      S.flash = 1;
+      moves();
+      ui.hint.textContent = "은 목걸이 — 처치 없이 한 번 더 움직입니다. (" + S.extendedMoves + "회 남음)";
       return;
     }
     if (p.traits.includes("slipstream") && !p.slipUsed && !p.slipCooldown) {
@@ -1232,7 +1318,7 @@
     g.strokeStyle = "#66609422";
     g.strokeRect(q.x - s / 2, q.y - s / 2, s, s);
   }
-  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1) {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false) {
     let q = pos(x, y),
       s = size(),
       // The color communicates remaining hits, not the enemy's original maximum.
@@ -1249,6 +1335,34 @@
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
+    if (enemy && risk) {
+      g.fillStyle = "#f45cf4";
+      g.shadowColor = "#f45cf4";
+      g.shadowBlur = 10;
+      g.font = "700 " + s * 0.2 + "px serif";
+      g.fillText("◆", q.x + s * 0.28, q.y - s * 0.3);
+    }
+    g.restore();
+  }
+  function fieldItem(item) {
+    let q = pos(item.x, item.y),
+      s = size(),
+      data = FIELD_ITEMS[item.type],
+      pulse = 0.78 + Math.sin(performance.now() / 180) * 0.18;
+    g.save();
+    g.globalAlpha = Math.min(1, item.life / 1.3) * pulse;
+    g.fillStyle = "#11172c";
+    g.strokeStyle = data.color;
+    g.shadowColor = data.color;
+    g.shadowBlur = 18;
+    g.lineWidth = 2.5;
+    g.fillRect(q.x - s * 0.26, q.y - s * 0.26, s * 0.52, s * 0.52);
+    g.strokeRect(q.x - s * 0.26, q.y - s * 0.26, s * 0.52, s * 0.52);
+    g.fillStyle = data.color;
+    g.font = "700 " + s * 0.31 + "px Georgia, serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(data.icon, q.x, q.y + s * 0.01);
     g.restore();
   }
   function edgeMoveTargets() {
@@ -1428,7 +1542,8 @@
       g.restore();
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1));
+    S.items.forEach(fieldItem);
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
