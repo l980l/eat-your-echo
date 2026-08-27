@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#08091a" />
     <title>It’s My Turn… Check! — turn-based chess survival</title>
     <link rel="preload" as="image" href="assets/its-my-turn-check-desktop-art.webp" media="(min-width: 561px)" type="image/webp" />
-    <link rel="preload" as="image" href="assets/its-my-turn-check-thumbnail-mobile.jpg" media="(max-width: 560px)" />
+    <link rel="preload" as="image" href="assets/its-my-turn-check-desktop-art.webp" media="(max-width: 560px)" type="image/webp" />
     <link rel="stylesheet" href="style.css?v=mobile-layout" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -419,8 +419,12 @@
     .secondary-button { border-color: #ffffff44; background: #171a32; color: #dce3ff; box-shadow: none; }
     @media (max-width: 560px) {
       #startScreen {
-        background-image: url("assets/its-my-turn-check-thumbnail-mobile.jpg");
-        background-position: center;
+        /* Use the same key art as desktop: this portrait crop keeps the queen and enemy line in frame. */
+        background-image: image-set(
+          url("assets/its-my-turn-check-desktop-art.webp") type("image/webp"),
+          url("assets/its-my-turn-check-desktop-art.png") type("image/png")
+        );
+        background-position: 22% center;
       }
       #startScreen .start-menu {
         top: max(146px, calc(env(safe-area-inset-top) + 132px));
@@ -530,7 +534,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.29</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.30</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -612,6 +616,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.29"></script>
+    <script src="game.js?v=v0.10.30"></script>
   </body>
 </html>
