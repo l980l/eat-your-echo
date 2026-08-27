@@ -350,6 +350,13 @@
       font-size: 9px;
       backdrop-filter: blur(3px);
     }
+    .risk-options { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+    .risk-options button { flex: 1; min-height: 106px; margin: 0; padding: 15px; background: #211229; color: #ffe9f7; border-color: #f45cf4; }
+    .risk-options button:first-child { background: #f45cf4; color: #16081a; border-color: #ffd166; box-shadow: 0 0 26px #f45cf477; }
+    .risk-options b, .risk-options span { display: block; }
+    .risk-options b { margin-bottom: 8px; font-size: 18px; }
+    .risk-options span { color: #c7c9df; font-size: 12px; line-height: 1.45; }
+    .risk-options button:first-child span { color: #3c143b; }
     .leaderboard-panel {
       max-width: 680px;
       max-height: min(84dvh, 760px);
@@ -417,6 +424,9 @@
       .leaderboard-panel { width: min(94vw, 630px); padding: 24px 16px; }
       .leaderboard-row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 9px; }
       .leaderboard-message { font-size: 11px; }
+      .risk-options { gap: 8px; }
+      .risk-options button { min-height: 116px; padding: 12px 8px; font-size: 14px; }
+      .risk-options span { font-size: 11px; }
     }
     #comboToast {
       position: absolute;
@@ -507,7 +517,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.17</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.18</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -529,6 +539,17 @@
             ><button class="upgrade-choice" data-choice="2">
               <b>♝</b><strong>BISHOP</strong><span>대각선 3칸 · 대각 폭발</span>
             </button>
+          </div>
+        </div>
+      </section>
+      <section class="overlay hidden" id="riskScreen">
+        <div class="panel">
+          <p class="eyebrow">WAVE 10 · RISK EVENT</p>
+          <h2>위험 계약을 맺을까요?</h2>
+          <p>다음 10박자 동안 계약으로 태어난 적은 내구도 +1을 얻습니다.<br />대신 해당 적 처치 시 XP ×2, 점수 ×1.5를 획득합니다.</p>
+          <div class="risk-options">
+            <button id="riskAccept"><b>계약 수락</b><span>강화 적 · 더 큰 보상</span></button>
+            <button id="riskDecline"><b>안전하게 진행</b><span>이번 계약을 거절합니다</span></button>
           </div>
         </div>
       </section>
@@ -577,6 +598,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.17"></script>
+    <script src="game.js?v=v0.10.18"></script>
   </body>
 </html>

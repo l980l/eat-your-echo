@@ -15,6 +15,9 @@
       upgradeEyebrow: $("#upgradeEyebrow"),
       upgradeTitle: $("#upgradeTitle"),
       choices: [...document.querySelectorAll(".upgrade-choice")],
+      risk: $("#riskScreen"),
+      riskAccept: $("#riskAccept"),
+      riskDecline: $("#riskDecline"),
       over: $("#gameOverScreen"),
       result: $("#resultText"),
       devBar: $("#devBar"),
@@ -87,6 +90,7 @@
       enemyTrail: [],
       upgradeOptions: [],
       upgradeMode: "",
+      riskBeats: 0,
     };
   let W = 0,
     H = 0,
@@ -468,7 +472,7 @@
   ];
   function reset() {
     S.phase = "enemy";
-    S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = 0;
+    S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = S.riskBeats = 0;
     S.displayChain = 0;
     S.devSpeed = 1;
     S.beat = 0.45;
@@ -661,13 +665,13 @@
     });
     S.enemies = S.enemies.filter((e) => !dead.includes(e));
     if (dead.length) {
-      S.player.xp += dead.length;
+      S.player.xp += dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0);
       S.kills += dead.length;
     }
     return {
       hits: victims.length,
       kills: dead.length,
-      points: dead.reduce((sum, e) => sum + 100 * (e.maxHp || 1), 0),
+      points: dead.reduce((sum, e) => sum + 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1), 0),
     };
   }
   function deathBurst(x, y) {
@@ -733,7 +737,9 @@
       maxHp =
         Math.random() < heavyChance
           ? 2 + Math.floor(Math.pow(Math.random(), 1.65) * (highestTier - 1))
-          : 1;
+          : 1,
+      risk = S.riskBeats > 0;
+    if (risk) maxHp = Math.min(7, maxHp + 1);
     S.enemies.push({
       x,
       y,
@@ -741,6 +747,7 @@
       face,
       hp: maxHp,
       maxHp,
+      risk,
     });
   }
   function toward(e) {
@@ -859,7 +866,15 @@
     }
     S.grace = Math.max(0, S.grace - 1);
     for (let i = 0; i < (S.wave % 4 === 0 ? 2 : 1); i++) spawn();
+    if (S.riskBeats > 0) S.riskBeats--;
     hud();
+    if (S.wave % 10 === 0) {
+      offerRisk();
+      return;
+    }
+    beginPlayerTurn();
+  }
+  function beginPlayerTurn() {
     S.phase = "player";
     S.flash = 1;
     moves();
@@ -867,7 +882,26 @@
     ui.beat.textContent = "MOVE NOW";
     ui.hint.textContent = S.grace
       ? "준비 박자 " + S.grace + " — 아직은 잡히지 않습니다."
-      : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.";
+      : S.riskBeats
+        ? "위험 계약 " + S.riskBeats + "박자 남음 — 강화 적 처치 시 XP ×2 · 점수 ×1.5"
+        : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.";
+  }
+  function offerRisk() {
+    S.phase = "risk";
+    ui.risk.classList.remove("hidden");
+    ui.hint.textContent = "위험 계약을 수락하거나 거절하세요.";
+  }
+  function resolveRisk(accept) {
+    if (S.phase !== "risk") return;
+    ui.risk.classList.add("hidden");
+    if (accept) {
+      S.riskBeats = 10;
+      ui.hint.textContent = "위험 계약 체결 — 강화 적에서 XP ×2 · 점수 ×1.5!";
+      sfx("capture", 4);
+    } else {
+      ui.hint.textContent = "계약을 거절했습니다. 안전한 전투를 계속합니다.";
+    }
+    beginPlayerTurn();
   }
   function playerMove(m) {
     if (S.phase !== "player") return;
@@ -1591,6 +1625,8 @@
   ui.rankingClose.addEventListener("click", closeRanking);
   ui.rankingPrev.addEventListener("click", () => loadLeaderboard(leaderboardPage - 1).catch(() => {}));
   ui.rankingNext.addEventListener("click", () => loadLeaderboard(leaderboardPage + 1).catch(() => {}));
+  ui.riskAccept.addEventListener("click", () => resolveRisk(true));
+  ui.riskDecline.addEventListener("click", () => resolveRisk(false));
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
     submitScore();
