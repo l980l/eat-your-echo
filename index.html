@@ -368,6 +368,10 @@
     .leaderboard-message { grid-column: 2 / -1; margin-top: -5px; color: #bfc5df; font-size: 12px; line-height: 1.4; word-break: break-word; }
     .leaderboard-score { color: #53f0e4; font: 700 16px monospace; }
     .leaderboard-empty { padding: 30px 0; color: #aeb4ce; text-align: center; }
+    .leaderboard-pagination { display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: 16px; }
+    .leaderboard-pagination button { min-width: 88px; margin: 0; padding: 10px 14px; font-size: 13px; }
+    .leaderboard-pagination button:disabled { cursor: default; opacity: .32; filter: none; transform: none; }
+    .leaderboard-pagination span { min-width: 54px; color: #c7cce3; font: 700 12px monospace; letter-spacing: .08em; text-align: center; }
     .score-submit { margin-top: 20px; padding-top: 18px; border-top: 1px solid #53f0e455; }
     .score-submit.hidden { display: none; }
     .score-submit h3 { margin: 0 0 8px; color: #53f0e4; font-size: 20px; }
@@ -497,7 +501,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.5</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.6</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -556,12 +560,17 @@
           <h2>THE BOARD REMEMBERS.</h2>
           <p class="leaderboard-note" id="leaderboardStatus">기록을 불러오는 중…</p>
           <div class="leaderboard-list" id="leaderboardList"></div>
+          <div class="leaderboard-pagination" aria-label="랭킹 페이지 탐색">
+            <button class="secondary-button" id="rankingPrev" disabled>← 이전</button>
+            <span id="rankingPage">1 / 10</span>
+            <button class="secondary-button" id="rankingNext" disabled>다음 →</button>
+          </div>
           <div class="leaderboard-actions">
             <button class="secondary-button" id="rankingClose">닫기</button>
           </div>
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.9.8"></script>
+    <script src="game.js?v=v0.10.6"></script>
   </body>
 </html>

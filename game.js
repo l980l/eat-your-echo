@@ -36,6 +36,9 @@
       rankingClose: $("#rankingClose"),
       leaderboardList: $("#leaderboardList"),
       leaderboardStatus: $("#leaderboardStatus"),
+      rankingPrev: $("#rankingPrev"),
+      rankingPage: $("#rankingPage"),
+      rankingNext: $("#rankingNext"),
       scoreSubmit: $("#scoreSubmit"),
       scoreSubmitTitle: $("#scoreSubmitTitle"),
       scoreSubmitIntro: $("#scoreSubmitIntro"),
@@ -102,8 +105,10 @@
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
     LEADERBOARD_LIMIT = 10,
+    LEADERBOARD_VIEW_LIMIT = 100,
     LEADERBOARD_STORE_LIMIT = 10000;
-  let leaderboardRows = [];
+  let leaderboardRows = [],
+    leaderboardPage = 0;
   async function leaderboardRequest(path, options = {}) {
     let response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
       ...options,
@@ -120,7 +125,7 @@
     }
     return response.status === 204 ? null : response.json();
   }
-  function renderLeaderboard(rows) {
+  function renderLeaderboard(rows, offset = 0) {
     ui.leaderboardList.textContent = "";
     if (!rows.length) {
       let empty = document.createElement("p");
@@ -138,7 +143,7 @@
       rank.className = "leaderboard-rank";
       name.className = "leaderboard-name";
       score.className = "leaderboard-score";
-      rank.textContent = String(index + 1).padStart(2, "0");
+      rank.textContent = String(offset + index + 1).padStart(2, "0");
       name.textContent = row.name;
       score.textContent = row.score + " KILLS";
       item.append(rank, name, score);
@@ -151,14 +156,27 @@
       ui.leaderboardList.appendChild(item);
     });
   }
-  async function loadLeaderboard() {
+  function updateLeaderboardPager(rows) {
+    let maxPage = LEADERBOARD_VIEW_LIMIT / LEADERBOARD_LIMIT - 1;
+    ui.rankingPage.textContent = `${leaderboardPage + 1} / ${maxPage + 1}`;
+    ui.rankingPrev.disabled = leaderboardPage === 0;
+    ui.rankingNext.disabled = leaderboardPage === maxPage || rows.length < LEADERBOARD_LIMIT;
+  }
+  async function loadLeaderboard(page = 0) {
+    leaderboardPage = Math.max(0, Math.min(LEADERBOARD_VIEW_LIMIT / LEADERBOARD_LIMIT - 1, page));
     ui.leaderboardStatus.textContent = "기록을 불러오는 중…";
+    ui.rankingPrev.disabled = true;
+    ui.rankingNext.disabled = true;
     try {
       leaderboardRows = await leaderboardRequest(
-        "leaderboard?select=name,score,message,created_at&order=score.desc,created_at.asc&limit=" + LEADERBOARD_LIMIT,
+        "leaderboard?select=name,score,message,created_at&order=score.desc,created_at.asc&limit=" +
+          LEADERBOARD_LIMIT +
+          "&offset=" +
+          leaderboardPage * LEADERBOARD_LIMIT,
       );
-      renderLeaderboard(leaderboardRows);
-      ui.leaderboardStatus.textContent = "TOP 10 · 처치 수 기준";
+      renderLeaderboard(leaderboardRows, leaderboardPage * LEADERBOARD_LIMIT);
+      updateLeaderboardPager(leaderboardRows);
+      ui.leaderboardStatus.textContent = `TOP 100 · ${leaderboardPage * LEADERBOARD_LIMIT + 1}–${leaderboardPage * LEADERBOARD_LIMIT + leaderboardRows.length}위 · 처치 수 기준`;
       return leaderboardRows;
     } catch (error) {
       ui.leaderboardList.textContent = "";
@@ -180,7 +198,7 @@
   async function openRanking() {
     ui.ranking.classList.remove("hidden");
     try {
-      await loadLeaderboard();
+      await loadLeaderboard(0);
     } catch (_) {}
   }
   function closeRanking() {
@@ -1498,6 +1516,8 @@
   ui.gameOverRanking.addEventListener("click", openRanking);
   ui.mainMenuButton.addEventListener("click", returnToMenu);
   ui.rankingClose.addEventListener("click", closeRanking);
+  ui.rankingPrev.addEventListener("click", () => loadLeaderboard(leaderboardPage - 1).catch(() => {}));
+  ui.rankingNext.addEventListener("click", () => loadLeaderboard(leaderboardPage + 1).catch(() => {}));
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
     submitScore();
