@@ -1418,6 +1418,20 @@
       g.strokeStyle = col;
       g.lineWidth = 2;
       g.strokeRect(q.x - s * 0.46, q.y - s * 0.46, s * 0.92, s * 0.92);
+      let exposed = bossPhase === "vulnerable";
+      let bossStatus = exposed
+        ? "◆ CORE OPEN — STRIKE!"
+        : bossPhase === "recover"
+          ? "✕ ARMOR RESETTING"
+          : "✕ LOCKED — DODGE LINE";
+      g.fillStyle = exposed ? "#062427" : "#310d19";
+      g.strokeStyle = col;
+      g.lineWidth = 1;
+      g.fillRect(q.x - s * 0.72, q.y - s * 0.84, s * 1.44, s * 0.22);
+      g.strokeRect(q.x - s * 0.72, q.y - s * 0.84, s * 1.44, s * 0.22);
+      g.fillStyle = exposed ? "#cafffb" : "#ffd5de";
+      g.font = "700 " + s * 0.115 + "px monospace";
+      g.fillText(bossStatus, q.x, q.y - s * 0.73);
       g.fillStyle = "#fff0f4";
       g.font = "700 " + s * 0.15 + "px monospace";
       g.fillText("IRON ROOK · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
@@ -1615,15 +1629,29 @@
     });
     S.moves.forEach((m) => {
       let q = pos(m.x, m.y),
+        bossTarget = S.enemies.some(
+          (e) => e.boss && e.bossPhase === "vulnerable" && e.x === m.x && e.y === m.y,
+        ),
         active = S.phase === "player",
         a = active
           ? 0.2 + 0.19 * Math.sin(performance.now() / 100) + S.flash * 0.35
           : 0.07;
-      g.fillStyle = "rgba(83,240,228," + a + ")";
+      g.fillStyle = bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
       g.fillRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
-      g.strokeStyle = active ? "#53f0e4" : "#53f0e466";
+      g.strokeStyle = bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
       g.lineWidth = active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
+      if (bossTarget) {
+        g.save();
+        g.fillStyle = "#fff6c8";
+        g.shadowColor = "#ffd166";
+        g.shadowBlur = 15;
+        g.font = "700 " + s * 0.18 + "px monospace";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText("STRIKE", q.x, q.y);
+        g.restore();
+      }
     });
     // Off-screen moves stay selectable through a directional edge control,
     // keeping the board at a stable, readable scale.
