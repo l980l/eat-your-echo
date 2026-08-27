@@ -688,7 +688,6 @@
     if (dead.length) {
       S.player.xp += dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0);
       S.kills += dead.length;
-      dead.forEach((e) => tryDropItem(e.x, e.y));
     }
     return {
       hits: victims.length,
@@ -700,21 +699,22 @@
     let roll = Math.random() * 100;
     return roll < 40 ? "chest" : roll < 65 ? "necklace" : roll < 85 ? "stride" : roll < 95 ? "aegis" : "judgement";
   }
-  function tryDropItem(x, y) {
-    if (S.items.length || S.itemCooldown || Math.random() >= 0.08) return;
-    let spots = [
-      [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
-    ]
-      .map(([dx, dy]) => ({ x: x + dx, y: y + dy }))
-      .filter((q) => q.x !== S.player.x || q.y !== S.player.y)
-      .filter((q) => !S.enemies.some((e) => e.x === q.x && e.y === q.y))
-      .filter((q) => !S.items.some((item) => item.x === q.x && item.y === q.y));
-    if (!spots.length) return;
-    let type = rollFieldItem(),
-      q = spots[Math.floor(Math.random() * spots.length)];
-    S.items.push({ type, x: q.x, y: q.y, life: 8 });
+  function spawnFieldItem() {
+    if (S.items.length || S.itemCooldown) return;
+    let p = S.player,
+      r = 5 + Math.min(S.wave, 6),
+      side = Math.floor(Math.random() * 4),
+      x = p.x,
+      y = p.y;
+    if (side === 0) { x += Math.floor(Math.random() * (r * 2 + 1)) - r; y -= r; }
+    if (side === 1) { x += r; y += Math.floor(Math.random() * (r * 2 + 1)) - r; }
+    if (side === 2) { x += Math.floor(Math.random() * (r * 2 + 1)) - r; y += r; }
+    if (side === 3) { x -= r; y += Math.floor(Math.random() * (r * 2 + 1)) - r; }
+    if (S.enemies.some((e) => e.x === x && e.y === y) || (x === p.x && y === p.y)) return;
+    let type = rollFieldItem();
+    S.items.push({ type, x, y, life: 14 });
     S.itemCooldown = 2;
-    burst(q.x, q.y, FIELD_ITEMS[type].color, 14);
+    burst(x, y, FIELD_ITEMS[type].color, 14);
   }
   function collectItemsAt(x, y, combo, hitSet) {
     let picked = S.items.filter((item) => item.x === x && item.y === y),
@@ -938,7 +938,9 @@
     }
     if (captured && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 20);
     S.grace = Math.max(0, S.grace - 1);
-    for (let i = 0; i < (S.wave % 4 === 0 ? 2 : 1); i++) spawn();
+    let enemySpawns = S.wave % 4 === 0 ? 2 : 1;
+    for (let i = 0; i < enemySpawns; i++) spawn();
+    if (Math.random() < 1 - Math.pow(0.92, enemySpawns)) spawnFieldItem();
     if (S.riskBeats > 0) S.riskBeats--;
     hud();
     if (S.wave % 20 === 0) {
