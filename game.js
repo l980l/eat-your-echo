@@ -80,7 +80,7 @@
       player: null,
       enemies: [],
       moves: [],
-      moveOrigin: { x: 0, y: 0 },
+      moveReach: { x: 1, y: 1 },
       particles: [],
       effects: [],
       trail: [],
@@ -579,8 +579,11 @@
   }
   function moves() {
     let p = S.player;
-    S.moveOrigin = { x: p.x, y: p.y };
     S.moves = dirs(p.piece).map(([x, y]) => ({ x: p.x + x, y: p.y + y }));
+    S.moveReach = {
+      x: Math.max(1, ...S.moves.map((m) => Math.abs(m.x - p.x))),
+      y: Math.max(1, ...S.moves.map((m) => Math.abs(m.y - p.y))),
+    };
   }
   function burst(x, y, color = "#53f0e4", n = 12) {
     for (let i = 0; i < n; i++) {
@@ -1177,14 +1180,11 @@
   }
   function size() {
     let base = Math.max(48, Math.min(76, Math.min(W, H) / 8.5)),
-      origin = S.moveOrigin;
-    // Use the move-list origin, not the player position. During a move those
-    // differ briefly, which otherwise makes the camera zoom for one frame.
-    if (S.phase !== "player" || !matchMedia("(max-width:560px)").matches || !origin) return base;
-    let moves = S.moves || [],
-      reachX = Math.max(1, ...moves.map((m) => Math.abs(m.x - origin.x))),
-      reachY = Math.max(1, ...moves.map((m) => Math.abs(m.y - origin.y))),
-      fitted = Math.min(W / (reachX * 2 + 1.15), H / (reachY * 2 + 1.15));
+      reach = S.moveReach;
+    // Persist the scale selected for the current move set through the move
+    // animation; it is refreshed only when the next move set is generated.
+    if (!matchMedia("(max-width:560px)").matches || !reach) return base;
+    let fitted = Math.min(W / (reach.x * 2 + 1.15), H / (reach.y * 2 + 1.15));
     return Math.max(base * 0.7, Math.min(base, fitted));
   }
   function pos(x, y) {
