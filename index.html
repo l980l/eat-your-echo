@@ -239,7 +239,11 @@
     .tutorial-flow b { color: #53f0e4; }
     .tutorial-swatch { width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 0 13px currentColor; }
     .tutorial-item { padding: 8px 11px; border: 1px solid currentColor; color: #ffd166; font: 700 11px monospace; letter-spacing: .06em; }
-    .tutorial-boss { color: #53f0e4; font: 700 17px monospace; text-shadow: 0 0 15px #53f0e4; }
+    .tutorial-boss-demo { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; }
+    .tutorial-boss-piece { position: relative; display: grid; width: 66px; height: 66px; place-items: center; border: 2px solid #ff5577; color: #ff7791; font: 700 52px Georgia, serif; line-height: 1; text-shadow: 0 0 18px #ff5577; }
+    .tutorial-boss-piece small { position: absolute; left: 50%; bottom: -17px; width: 100px; transform: translateX(-50%); color: #fff0f4; font: 700 9px monospace; white-space: nowrap; text-shadow: none; }
+    .tutorial-boss-line { width: min(35%, 140px); border-top: 3px dashed #ff5577; box-shadow: 0 0 12px #ff5577; }
+    .tutorial-boss-state { color: #ffb3c1; font: 700 10px monospace; letter-spacing: .05em; }
     .tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .tutorial-actions button { margin: 0; }
     .tutorial-skip { border-color: #ffffff44; background: transparent; color: #aeb7d3; box-shadow: none; }
@@ -255,6 +259,8 @@
       .tutorial-copy { min-height: 6.8em; font-size: 14px; }
       .tutorial-visual { min-height: 68px; margin-top: 16px; }
       .tutorial-swatch { width: 20px; height: 20px; }
+      .tutorial-boss-piece { width: 59px; height: 59px; font-size: 46px; }
+      .tutorial-boss-state { font-size: 9px; }
     }
   </style>
   <style>
@@ -551,7 +557,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.35</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.36</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -647,6 +653,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.35"></script>
+    <script src="game.js?v=v0.10.36"></script>
   </body>
 </html>
