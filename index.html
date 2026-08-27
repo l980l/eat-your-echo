@@ -298,13 +298,14 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      min-height: 48px;
+      min-height: 54px;
       margin: 0;
-      padding: 10px 0;
-      border: 0;
-      background: transparent;
+      padding: 13px 24px;
+      border: 1px solid #53f0e4aa;
+      clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+      background: linear-gradient(90deg, #53f0e426, #0e182dcc 72%, #53f0e411);
       color: #53f0e4;
-      box-shadow: none;
+      box-shadow: inset 0 0 18px #53f0e411, 0 0 14px #53f0e422;
       font-size: clamp(16px, 2vw, 23px);
       letter-spacing: 0.06em;
       text-align: left;
@@ -315,12 +316,14 @@
     }
     #startScreen .start-menu button:hover,
     #startScreen .start-menu button:active {
-      transform: translateX(7px);
-      background: transparent;
-      box-shadow: none;
-      color: #53f0e4;
+      transform: translateX(7px) skewX(-3deg);
+      background: linear-gradient(90deg, #53f0e455, #1a3650e8 72%, #53f0e422);
+      box-shadow: inset 0 0 20px #53f0e433, 0 0 20px #53f0e466;
+      color: #fff;
     }
     #startScreen .start-menu #rankingButton {
+      border-color: #d66efd99;
+      background: linear-gradient(90deg, #d66efd25, #1f1336cc 72%, #d66efd11);
       color: #eac8ff;
       text-shadow: 0 0 13px #d66efd77;
     }
@@ -429,7 +432,7 @@
         text-shadow: 2px 2px 0 #d66efd, 0 0 18px #53f0e4aa;
       }
       .build-version { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); font-size: 9px; }
-      #startScreen .start-menu button { min-height: 46px; padding: 9px 0; font-size: 16px; }
+      #startScreen .start-menu button { min-height: 50px; padding: 12px 19px; font-size: 16px; }
       .leaderboard-panel { width: min(94vw, 630px); padding: 24px 16px; }
       .leaderboard-row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 9px; }
       .leaderboard-message { font-size: 11px; }
@@ -526,7 +529,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.22</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.23</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -608,6 +611,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.22"></script>
+    <script src="game.js?v=v0.10.23"></script>
   </body>
 </html>
