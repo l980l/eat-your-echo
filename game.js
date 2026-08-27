@@ -5,6 +5,7 @@
     ui = {
       hp: $("#hp"),
       xp: $("#xp"),
+      score: $("#score"),
       phase: $("#phaseLabel"),
       beat: $("#beatText"),
       hint: $("#hint"),
@@ -73,6 +74,7 @@
       flash: 0,
       wave: 0,
       kills: 0,
+      score: 0,
       chain: 0,
       camera: { x: 0, y: 0 },
       player: null,
@@ -146,7 +148,7 @@
       score.className = "leaderboard-score";
       rank.textContent = String(offset + index + 1).padStart(2, "0");
       name.textContent = row.name;
-      score.textContent = row.score + " KILLS";
+      score.textContent = Number(row.score).toLocaleString() + " PTS";
       item.append(rank, name, score);
       if (row.message) {
         let message = document.createElement("span");
@@ -177,7 +179,7 @@
       );
       renderLeaderboard(leaderboardRows, leaderboardPage * LEADERBOARD_LIMIT);
       updateLeaderboardPager(leaderboardRows);
-      ui.leaderboardStatus.textContent = `TOP 1,000 · ${leaderboardPage * LEADERBOARD_LIMIT + 1}–${leaderboardPage * LEADERBOARD_LIMIT + leaderboardRows.length}위 · 처치 수 기준`;
+      ui.leaderboardStatus.textContent = `TOP 1,000 · ${leaderboardPage * LEADERBOARD_LIMIT + 1}–${leaderboardPage * LEADERBOARD_LIMIT + leaderboardRows.length}위 · 점수 기준`;
       return leaderboardRows;
     } catch (error) {
       ui.leaderboardList.textContent = "";
@@ -465,7 +467,7 @@
   ];
   function reset() {
     S.phase = "enemy";
-    S.elapsed = S.flash = S.wave = S.kills = S.death = S.chain = 0;
+    S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = 0;
     S.displayChain = 0;
     S.devSpeed = 1;
     S.beat = 0.45;
@@ -487,6 +489,10 @@
   function hud() {
     ui.hp.textContent = S.wave;
     ui.xp.textContent = S.player.xp + " / " + (3 + S.player.rank * 2);
+    ui.score.textContent = S.score.toLocaleString();
+  }
+  function chainMultiplier(chain) {
+    return 1 + Math.min(9, Math.max(0, chain - 1)) * 0.25;
   }
   function showCombo(chain, fromChain = chain - 1) {
     clearTimeout(S.comboStepTimer);
@@ -638,7 +644,7 @@
     let victims = [...new Set(targets)].filter(
       (e) => S.enemies.includes(e) && !hitSet?.has(e),
     );
-    if (!victims.length) return { hits: 0, kills: 0 };
+    if (!victims.length) return { hits: 0, kills: 0, points: 0 };
     victims.forEach((e) => hitSet?.add(e));
     let dead = [];
     victims.forEach((e) => {
@@ -653,7 +659,11 @@
       S.player.xp += dead.length;
       S.kills += dead.length;
     }
-    return { hits: victims.length, kills: dead.length };
+    return {
+      hits: victims.length,
+      kills: dead.length,
+      points: dead.reduce((sum, e) => sum + 100 * (e.maxHp || 1), 0),
+    };
   }
   function deathBurst(x, y) {
     for (let i = 0; i < 34; i++) {
@@ -859,6 +869,8 @@
     let p = S.player,
       from = { x: p.x, y: p.y },
       gained = 0,
+      earned = 0,
+      scoreGain = 0,
       attacked = false,
       struck = new Set(),
       combo = S.chain + 1,
@@ -876,6 +888,7 @@
       let r = damageEnemies(caught, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
     }
     if (p.traits.includes("shockwave")) {
       let v = S.enemies.filter(
@@ -884,6 +897,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
       burst(p.x, p.y, "#c274ff", 20);
       traitFx("shockwave", p.x, p.y);
     }
@@ -896,6 +910,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
     }
     if (attacked && p.traits.includes("magnet")) {
       let v = S.enemies.filter(
@@ -904,6 +919,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
       traitFx("magnet", p.x, p.y);
     }
     if (attacked && p.traits.includes("echoBlade")) {
@@ -920,6 +936,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
       v.forEach((e) => traitFx("echo", p.x, p.y, { x2: e.x, y2: e.y }));
     }
     if (attacked && p.traits.includes("fork")) {
@@ -931,6 +948,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
       v.forEach((e) => {
         traitFx("fork", p.x, p.y, { x2: e.x, y2: e.y, via: knightCorner(p, e) });
       });
@@ -950,6 +968,7 @@
       let r = damageEnemies(v, combo, struck);
       attacked ||= r.hits > 0;
       gained += r.kills;
+      earned += r.points;
       v.forEach((e) => {
         traitFx("cross", p.x, p.y, { x2: e.x, y2: e.y });
       });
@@ -957,6 +976,10 @@
     if (attacked && p.traits.includes("chainSpark")) {
       p.xp++;
       traitFx("spark", p.x, p.y);
+    }
+    if (gained) {
+      scoreGain = Math.round(earned * chainMultiplier(S.chain + gained));
+      S.score += scoreGain;
     }
     if (attacked) sfx("capture", S.chain + Math.max(1, gained));
     hud();
@@ -978,7 +1001,7 @@
       moves();
       ui.hint.textContent =
         gained
-          ? "연속 수 ×" + S.chain + "! 한 번 더 움직일 수 있습니다."
+          ? "연속 수 ×" + S.chain + "! +" + scoreGain.toLocaleString() + "점 · 한 번 더 움직일 수 있습니다."
           : "장갑 적을 타격했습니다! 마무리할 때까지 한 번 더 움직이세요.";
       return;
     }
@@ -1134,13 +1157,15 @@
   }
   function over() {
     S.running = false;
-    S.finalScore = S.kills;
+    S.finalScore = S.score;
     ui.result.textContent =
       "적 말이 당신을 잡았습니다. " +
       S.wave +
-      "번의 박자 동안 " +
+      "번의 박자 동안 SCORE " +
+      S.score.toLocaleString() +
+      "점 · " +
       S.kills +
-      "개의 말을 제거했습니다.";
+      "개 처치.";
     ui.scoreSubmit.classList.add("hidden");
     ui.scoreName.value = localStorage.getItem("its-my-turn-ranking-name") || "";
     ui.scoreMessage.value = "";
