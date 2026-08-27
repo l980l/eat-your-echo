@@ -123,7 +123,8 @@
       let body = await response.text();
       throw new Error(body || "랭킹 서버에 연결할 수 없습니다.");
     }
-    return response.status === 204 ? null : response.json();
+    let body = await response.text();
+    return body ? JSON.parse(body) : null;
   }
   function renderLeaderboard(rows, offset = 0) {
     ui.leaderboardList.textContent = "";
