@@ -326,12 +326,18 @@
       audio.master = audio.ctx.createGain();
       audio.bgm = audio.ctx.createGain();
       audio.sfx = audio.ctx.createGain();
+      let limiter = audio.ctx.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.knee.value = 8;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.16;
       audio.master.gain.value = 1;
       audio.bgm.gain.value = audio.bgmVolume;
       audio.sfx.gain.value = audio.sfxVolume;
       audio.bgm.connect(audio.master);
       audio.sfx.connect(audio.master);
-      audio.master.connect(audio.ctx.destination);
+      audio.master.connect(limiter).connect(audio.ctx.destination);
     }
     if (audio.ctx.state === "suspended") audio.ctx.resume();
     return audio.ctx;
