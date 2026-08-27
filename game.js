@@ -105,7 +105,7 @@
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
     LEADERBOARD_LIMIT = 10,
-    LEADERBOARD_VIEW_LIMIT = 100,
+    LEADERBOARD_VIEW_LIMIT = 1000,
     LEADERBOARD_STORE_LIMIT = 10000;
   let leaderboardRows = [],
     leaderboardPage = 0;
@@ -176,7 +176,7 @@
       );
       renderLeaderboard(leaderboardRows, leaderboardPage * LEADERBOARD_LIMIT);
       updateLeaderboardPager(leaderboardRows);
-      ui.leaderboardStatus.textContent = `TOP 100 · ${leaderboardPage * LEADERBOARD_LIMIT + 1}–${leaderboardPage * LEADERBOARD_LIMIT + leaderboardRows.length}위 · 처치 수 기준`;
+      ui.leaderboardStatus.textContent = `TOP 1,000 · ${leaderboardPage * LEADERBOARD_LIMIT + 1}–${leaderboardPage * LEADERBOARD_LIMIT + leaderboardRows.length}위 · 처치 수 기준`;
       return leaderboardRows;
     } catch (error) {
       ui.leaderboardList.textContent = "";
