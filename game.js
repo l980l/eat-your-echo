@@ -80,6 +80,7 @@
       player: null,
       enemies: [],
       moves: [],
+      moveOrigin: { x: 0, y: 0 },
       particles: [],
       effects: [],
       trail: [],
@@ -578,6 +579,7 @@
   }
   function moves() {
     let p = S.player;
+    S.moveOrigin = { x: p.x, y: p.y };
     S.moves = dirs(p.piece).map(([x, y]) => ({ x: p.x + x, y: p.y + y }));
   }
   function burst(x, y, color = "#53f0e4", n = 12) {
@@ -1174,7 +1176,16 @@
     offerScoreSubmission(S.finalScore);
   }
   function size() {
-    return Math.max(48, Math.min(76, Math.min(W, H) / 8.5));
+    let base = Math.max(48, Math.min(76, Math.min(W, H) / 8.5)),
+      origin = S.moveOrigin;
+    // Use the move-list origin, not the player position. During a move those
+    // differ briefly, which otherwise makes the camera zoom for one frame.
+    if (S.phase !== "player" || !matchMedia("(max-width:560px)").matches || !origin) return base;
+    let moves = S.moves || [],
+      reachX = Math.max(1, ...moves.map((m) => Math.abs(m.x - origin.x))),
+      reachY = Math.max(1, ...moves.map((m) => Math.abs(m.y - origin.y))),
+      fitted = Math.min(W / (reachX * 2 + 1.15), H / (reachY * 2 + 1.15));
+    return Math.max(base * 0.7, Math.min(base, fitted));
   }
   function pos(x, y) {
     let s = size();
