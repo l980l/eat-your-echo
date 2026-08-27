@@ -601,7 +601,7 @@
       base = b.flatMap(([x, y]) =>
         Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
-      if (piece === "bishop") base.push([1, 0], [-1, 0], [0, 1], [0, -1]);
+      if (piece === "bishop") base.push([0, -1]);
     }
     if (!p.traits?.includes("royalStep")) return base;
     let royal = king.flatMap(([x, y]) => [[x, y], [x * 2, y * 2]]);
@@ -1206,7 +1206,7 @@
         name = o.toUpperCase();
         desc = {
           knight: "L자 이동",
-          bishop: "대각선 3칸 · 상하좌우 1칸",
+          bishop: "대각선 3칸 · 위로 1칸",
           rook: "직선 3칸 이동",
           queen: "8방향 3칸 이동",
           king: "8방향 1칸 · XP ×1.5",
@@ -1690,7 +1690,7 @@
     let pieceInfo = {
         pawn: "8방향 1칸",
         knight: "L자 이동",
-        bishop: "대각선 3칸 · 상하좌우 1칸",
+        bishop: "대각선 3칸 · 위로 1칸",
         rook: "직선 3칸 이동",
         queen: "8방향 3칸",
         king: "8방향 1칸 · XP ×1.5",
