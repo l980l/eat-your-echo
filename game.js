@@ -1174,7 +1174,17 @@
     offerScoreSubmission(S.finalScore);
   }
   function size() {
-    return Math.max(48, Math.min(76, Math.min(W, H) / 8.5));
+    let base = Math.max(48, Math.min(76, Math.min(W, H) / 8.5)),
+      p = S.player;
+    // Keep the normal board scale, but give a queen with LONG STRIDE a small
+    // mobile-only zoom-out so its five-square rays do not fall off-screen.
+    if (!p || !matchMedia("(max-width:560px)").matches || p.piece !== "queen" || !p.traits?.includes("longStride"))
+      return base;
+    let moves = S.moves || [],
+      reachX = Math.max(1, ...moves.map((m) => Math.abs(m.x - p.x))),
+      reachY = Math.max(1, ...moves.map((m) => Math.abs(m.y - p.y))),
+      fitted = Math.min(W / (reachX * 2 + 1.15), H / (reachY * 2 + 1.15));
+    return Math.max(base * 0.82, Math.min(base, fitted));
   }
   function pos(x, y) {
     let s = size();
@@ -1352,6 +1362,33 @@
       g.lineWidth = active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
     });
+    // A move that remains beyond the limited zoom is still discoverable at the
+    // nearest edge of the screen without making the board too small to play.
+    if (S.phase === "player") {
+      S.moves.forEach((m) => {
+        let q = pos(m.x, m.y);
+        if (q.x >= 18 && q.x <= W - 18 && q.y >= 18 && q.y <= H - 18) return;
+        let dx = q.x - W / 2,
+          dy = q.y - H / 2,
+          scale = Math.min((W / 2 - 23) / Math.max(1, Math.abs(dx)), (H / 2 - 23) / Math.max(1, Math.abs(dy))),
+          x = W / 2 + dx * scale,
+          y = H / 2 + dy * scale,
+          angle = Math.atan2(dy, dx);
+        g.save();
+        g.translate(x, y);
+        g.rotate(angle);
+        g.fillStyle = "#53f0e4";
+        g.shadowColor = "#53f0e4";
+        g.shadowBlur = 14;
+        g.beginPath();
+        g.moveTo(10, 0);
+        g.lineTo(-6, -7);
+        g.lineTo(-6, 7);
+        g.closePath();
+        g.fill();
+        g.restore();
+      });
+    }
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
