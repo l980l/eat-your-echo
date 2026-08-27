@@ -307,13 +307,13 @@
     sfx: null,
     timer: null,
     step: 0,
-    // The UI remains 0–100%, while 100% deliberately maps to 300% internal gain.
-    bgmVolume: Number.isFinite(savedBgmVolume) ? Math.max(0, Math.min(3, savedBgmVolume * 0.03)) : initialVolume * 0.03,
-    sfxVolume: Number.isFinite(savedSfxVolume) ? Math.max(0, Math.min(3, savedSfxVolume * 0.03)) : initialVolume * 0.03,
+    // The UI remains 0–100%, while 100% deliberately maps to 500% internal gain.
+    bgmVolume: Number.isFinite(savedBgmVolume) ? Math.max(0, Math.min(5, savedBgmVolume * 0.05)) : initialVolume * 0.05,
+    sfxVolume: Number.isFinite(savedSfxVolume) ? Math.max(0, Math.min(5, savedSfxVolume * 0.05)) : initialVolume * 0.05,
   };
   function setBusVolume(bus, value) {
     let slider = Math.max(0, Math.min(100, value));
-    audio[bus + "Volume"] = slider * 0.03;
+    audio[bus + "Volume"] = slider * 0.05;
     localStorage.setItem("checkbeat-" + bus + "-volume-v1", Math.round(slider));
     ui[bus + "VolumeRange"].value = Math.round(slider);
     ui[bus + "VolumeValue"].textContent = Math.round(slider) + "%";
@@ -1910,8 +1910,8 @@
   ui.choices.forEach((b) =>
     b.addEventListener("click", () => chooseUpgrade(Number(b.dataset.choice))),
   );
-  setBusVolume("bgm", Math.round(audio.bgmVolume / 0.03));
-  setBusVolume("sfx", Math.round(audio.sfxVolume / 0.03));
+  setBusVolume("bgm", Math.round(audio.bgmVolume / 0.05));
+  setBusVolume("sfx", Math.round(audio.sfxVolume / 0.05));
   ui.soundToggle.addEventListener("click", () => ui.soundPanel.classList.toggle("hidden"));
   ui.bgmVolumeRange.addEventListener("input", (e) => setBusVolume("bgm", Number(e.target.value)));
   ui.sfxVolumeRange.addEventListener("input", (e) => setBusVolume("sfx", Number(e.target.value)));
