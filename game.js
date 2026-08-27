@@ -609,7 +609,9 @@
   }
   function moves() {
     let p = S.player;
-    S.moves = dirs(p.piece).map(([x, y]) => ({ x: p.x + x, y: p.y + y }));
+    S.moves = dirs(p.piece)
+      .map(([x, y]) => ({ x: p.x + x, y: p.y + y }))
+      .filter((m) => !S.enemies.some((e) => e.boss && e.x === m.x && e.y === m.y && e.bossPhase !== "vulnerable"));
     S.moveReach = {
       x: Math.max(1, ...S.moves.map((m) => Math.abs(m.x - p.x))),
       y: Math.max(1, ...S.moves.map((m) => Math.abs(m.y - p.y))),
@@ -677,7 +679,7 @@
   }
   function damageEnemies(targets, combo, hitSet) {
     let victims = [...new Set(targets)].filter(
-      (e) => S.enemies.includes(e) && !hitSet?.has(e),
+      (e) => S.enemies.includes(e) && !hitSet?.has(e) && (!e.boss || e.bossPhase === "vulnerable"),
     );
     if (!victims.length) return { hits: 0, kills: 0, points: 0 };
     victims.forEach((e) => hitSet?.add(e));
@@ -687,17 +689,20 @@
       if (e.hp <= 0) {
         dead.push(e);
         captureBurst(e.x, e.y, combo);
-      } else hitBurst(e.x, e.y, combo);
+      } else {
+        if (e.boss) e.bossPhase = "recover";
+        hitBurst(e.x, e.y, combo);
+      }
     });
     S.enemies = S.enemies.filter((e) => !dead.includes(e));
     if (dead.length) {
-      gainXp(dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0));
+      gainXp(dead.reduce((sum, e) => sum + (e.boss ? 5 : e.risk ? 2 : 1), 0));
       S.kills += dead.length;
     }
     return {
       hits: victims.length,
       kills: dead.length,
-      points: dead.reduce((sum, e) => sum + 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1), 0),
+      points: dead.reduce((sum, e) => sum + (e.boss ? 5000 : 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1)), 0),
     };
   }
   function rollFieldItem() {
@@ -823,6 +828,43 @@
       risk,
     });
   }
+  function boss() {
+    return S.enemies.find((e) => e.boss);
+  }
+  function spawnRookBoss() {
+    if (boss()) return;
+    let p = S.player,
+      spots = [[0, -4], [4, 0], [0, 4], [-4, 0]]
+        .sort(() => Math.random() - 0.5)
+        .map(([x, y]) => ({ x: p.x + x, y: p.y + y })),
+      q = spots.find((spot) => !S.enemies.some((e) => e.x === spot.x && e.y === spot.y));
+    if (!q) return;
+    S.enemies.push({
+      x: q.x,
+      y: q.y,
+      type: "rook",
+      hp: 5,
+      maxHp: 5,
+      boss: true,
+      bossPhase: "telegraph",
+      bossAxis: Math.random() < 0.5 ? "row" : "column",
+    });
+    burst(q.x, q.y, "#ff5577", 42);
+  }
+  function advanceRookBoss() {
+    let e = boss();
+    if (!e) return null;
+    if (e.bossPhase === "telegraph") {
+      let hit = e.bossAxis === "row" ? S.player.y === e.y : S.player.x === e.x;
+      if (hit) return { boss: e, from: { x: e.x, y: e.y } };
+      e.bossPhase = "vulnerable";
+      burst(e.x, e.y, "#53f0e4", 28);
+      return null;
+    }
+    e.bossPhase = "telegraph";
+    e.bossAxis = Math.random() < 0.5 ? "row" : "column";
+    return null;
+  }
   function toward(e) {
     let p = S.player,
       occupied = new Set(
@@ -898,10 +940,27 @@
     S.player.slipUsed = false;
     S.player.slipCooldown = Math.max(0, (S.player.slipCooldown || 0) - 1);
     sfx("enemy");
+    let bossStrike = advanceRookBoss();
+    if (bossStrike && !invulnerable) {
+      let e = bossStrike.boss;
+      e.x = S.player.x;
+      e.y = S.player.y;
+      S.enemyTrail.push({ x1: bossStrike.from.x, y1: bossStrike.from.y, x2: e.x, y2: e.y });
+      burst(e.x, e.y, "#ff5577", 36);
+      S.phase = "captured";
+      S.captureTimer = 0.34;
+      S.flash = 0;
+      ui.phase.textContent = "CHECKMATE";
+      ui.beat.textContent = "ROOK STRIKE";
+      ui.hint.textContent = "철의 룩이 예고한 줄을 관통했습니다.";
+      return;
+    }
+    if (bossStrike && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 26);
     let used = new Set(),
       captured = false,
       killer = null;
     S.enemies
+      .filter((e) => !e.boss)
       .sort((a, b) => dist(a, S.player) - dist(b, S.player))
       .forEach((e) => {
         let from = { x: e.x, y: e.y },
@@ -945,6 +1004,7 @@
     S.grace = Math.max(0, S.grace - 1);
     let enemySpawns = S.wave % 4 === 0 ? 2 : 1;
     for (let i = 0; i < enemySpawns; i++) spawn();
+    if (S.wave % 30 === 0) spawnRookBoss();
     if (Math.random() < 1 - Math.pow(0.92, enemySpawns)) spawnFieldItem();
     if (S.riskBeats > 0) S.riskBeats--;
     hud();
@@ -960,8 +1020,13 @@
     moves();
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
+    let ironRook = boss();
     ui.hint.textContent = S.grace
       ? "준비 박자 " + S.grace + " — 아직은 잡히지 않습니다."
+      : ironRook?.bossPhase === "telegraph"
+        ? "철의 룩이 " + (ironRook.bossAxis === "row" ? "가로" : "세로") + " 줄을 예고합니다 — 붉은 선 밖으로 이동하세요."
+        : ironRook?.bossPhase === "vulnerable"
+          ? "철의 룩 코어 노출! 지금 룩을 밟아 피해를 주세요."
       : S.riskBeats
         ? "위험 계약 " + S.riskBeats + "박자 남음 — 강화 적 처치 시 XP ×2 · 점수 ×1.5"
         : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.";
@@ -1325,20 +1390,20 @@
     g.strokeStyle = "#66609422";
     g.strokeRect(q.x - s / 2, q.y - s / 2, s, s);
   }
-  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false) {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "") {
     let q = pos(x, y),
       s = size(),
       // The color communicates remaining hits, not the enemy's original maximum.
       // A 2-health orange enemy becomes red after its first hit.
       durability = COMBO_COLORS[Math.max(0, Math.min(6, hp - 1))],
-      col = enemy ? durability : "#53f0e4",
+      col = bossPiece ? (bossPhase === "vulnerable" ? "#53f0e4" : "#ff5577") : enemy ? durability : "#53f0e4",
       health = Math.max(0, Math.min(1, hp / maxHp));
     g.save();
-    g.shadowBlur = enemy ? 20 : 30;
+    g.shadowBlur = bossPiece ? 38 : enemy ? 20 : 30;
     g.shadowColor = col;
     g.globalAlpha = enemy ? 0.68 + health * 0.32 : 1;
     g.fillStyle = enemy ? col : "#f1ffff";
-    g.font = "700 " + s * 0.62 + "px Georgia, 'Times New Roman', serif";
+    g.font = "700 " + s * (bossPiece ? 0.94 : 0.62) + "px Georgia, 'Times New Roman', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
@@ -1348,6 +1413,14 @@
       g.shadowBlur = 10;
       g.font = "700 " + s * 0.2 + "px serif";
       g.fillText("◆", q.x + s * 0.28, q.y - s * 0.3);
+    }
+    if (bossPiece) {
+      g.strokeStyle = col;
+      g.lineWidth = 2;
+      g.strokeRect(q.x - s * 0.46, q.y - s * 0.46, s * 0.92, s * 0.92);
+      g.fillStyle = "#fff0f4";
+      g.font = "700 " + s * 0.15 + "px monospace";
+      g.fillText("IRON ROOK · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
     }
     g.restore();
   }
@@ -1394,6 +1467,27 @@
       cy = Math.floor(S.camera.y);
     for (let y = cy - rows; y <= cy + rows; y++)
       for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
+    let ironRook = boss();
+    if (ironRook?.bossPhase === "telegraph") {
+      let q = pos(ironRook.x, ironRook.y);
+      g.save();
+      g.globalAlpha = 0.6 + Math.sin(performance.now() / 130) * 0.18;
+      g.strokeStyle = "#ff5577";
+      g.shadowColor = "#ff315d";
+      g.shadowBlur = 16;
+      g.lineWidth = Math.max(3, s * 0.09);
+      g.setLineDash([9, 8]);
+      g.beginPath();
+      if (ironRook.bossAxis === "row") {
+        g.moveTo(0, q.y);
+        g.lineTo(W, q.y);
+      } else {
+        g.moveTo(q.x, 0);
+        g.lineTo(q.x, H);
+      }
+      g.stroke();
+      g.restore();
+    }
     if (S.enemyTrail.length) {
       g.save();
       g.globalAlpha = 0.52;
@@ -1550,7 +1644,7 @@
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.items.forEach(fieldItem);
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk));
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
