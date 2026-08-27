@@ -20,6 +20,7 @@
       riskDecline: $("#riskDecline"),
       over: $("#gameOverScreen"),
       result: $("#resultText"),
+      resultRank: $("#resultRank"),
       devBar: $("#devBar"),
       devToggle: $("#devToggle"),
       devSpeed: $("#devSpeed"),
@@ -224,6 +225,23 @@
     );
     return rows[0]?.score ?? null;
   }
+  async function leaderboardRank(score) {
+    let response = await fetch(
+      SUPABASE_URL + "/rest/v1/leaderboard?select=score&score=gt." + encodeURIComponent(score),
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY,
+          Prefer: "count=exact",
+          Range: "0-0",
+        },
+      },
+    );
+    if (!response.ok) throw new Error("랭킹을 계산할 수 없습니다.");
+    let total = response.headers.get("content-range")?.match(/\/(\d+)$/)?.[1];
+    if (total === undefined) throw new Error("랭킹 수를 받지 못했습니다.");
+    return Number(total) + 1;
+  }
   async function openRanking() {
     ui.ranking.classList.remove("hidden");
     try {
@@ -306,9 +324,18 @@
     ui.scoreSubmit.classList.add("hidden");
     ui.scoreStatus.textContent = "글로벌 랭킹을 확인하는 중…";
     try {
-      let [rows, cutoff] = await Promise.all([loadLeaderboard(), leaderboardCutoff()]),
+      let [rows, cutoff, rank] = await Promise.all([
+          loadLeaderboard(),
+          leaderboardCutoff(),
+          leaderboardRank(score).catch(() => null),
+        ]),
         topTen = isTopTenScore(score, rows),
         qualifies = score > 0 && (cutoff === null || score > cutoff);
+      ui.resultRank.textContent = rank
+        ? rank <= LEADERBOARD_STORE_LIMIT
+          ? "현재 점수 기준 예상 " + rank.toLocaleString() + "위"
+          : "현재 점수 기준 TOP 10,000 밖"
+        : "현재 점수의 순위를 불러오지 못했습니다.";
       if (qualifies) {
         S.scoreSubmissionTopTen = topTen;
         ui.scoreSubmit.classList.remove("hidden");
@@ -328,6 +355,7 @@
         ui.scoreStatus.textContent = "이번 기록은 TOP 10,000 밖입니다. 다시 도전해보세요.";
       }
     } catch (_) {
+      ui.resultRank.textContent = "현재 점수의 순위를 불러오지 못했습니다.";
       ui.scoreStatus.textContent = "랭킹 확인에 실패했습니다. 연결 후 다시 시도해주세요.";
     }
   }
@@ -1433,6 +1461,7 @@
       "점 · " +
       S.kills +
       "개 처치.";
+    ui.resultRank.textContent = "현재 점수의 순위를 계산하는 중…";
     ui.scoreSubmit.classList.add("hidden");
     ui.scoreName.value = localStorage.getItem("its-my-turn-ranking-name") || "";
     ui.scoreMessage.value = "";

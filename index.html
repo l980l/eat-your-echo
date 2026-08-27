@@ -417,6 +417,7 @@
     .leaderboard-pagination button { min-width: 88px; margin: 0; padding: 10px 14px; font-size: 13px; }
     .leaderboard-pagination button:disabled { cursor: default; opacity: .32; filter: none; transform: none; }
     .leaderboard-pagination span { min-width: 54px; color: #c7cce3; font: 700 12px monospace; letter-spacing: .08em; text-align: center; }
+    .score-rank { margin: 13px 0 0 !important; color: #ffd166 !important; font: 700 clamp(17px, 3vw, 23px) monospace; letter-spacing: .04em; text-shadow: 0 0 14px #ffd16666; }
     .score-submit { margin-top: 20px; padding-top: 18px; border-top: 1px solid #53f0e455; }
     .score-submit.hidden { display: none; }
     .score-submit h3 { margin: 0 0 8px; color: #53f0e4; font-size: 20px; }
@@ -557,7 +558,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.36</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.37</b> · 2026.08.28</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -621,6 +622,7 @@
           <p class="eyebrow">CHECKMATE</p>
           <h2>THE BOARD REMEMBERS.</h2>
           <p id="resultText"></p>
+          <p class="score-rank" id="resultRank">현재 점수의 순위를 계산하는 중…</p>
           <div class="score-submit hidden" id="scoreSubmit">
             <h3 id="scoreSubmitTitle">TOP 10 달성!</h3>
             <p id="scoreSubmitIntro">이 기록을 남기고 한 줄 소감을 적어주세요.</p>
@@ -653,6 +655,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.36"></script>
+    <script src="game.js?v=v0.10.37"></script>
   </body>
 </html>
