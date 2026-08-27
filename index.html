@@ -8,7 +8,7 @@
     />
     <meta name="theme-color" content="#08091a" />
     <title>It’s My Turn… Check! — turn-based chess survival</title>
-    <link rel="preload" as="image" href="assets/its-my-turn-check-thumbnail.webp" media="(min-width: 561px)" type="image/webp" />
+    <link rel="preload" as="image" href="assets/its-my-turn-check-desktop-art.webp" media="(min-width: 561px)" type="image/webp" />
     <link rel="preload" as="image" href="assets/its-my-turn-check-thumbnail-mobile.jpg" media="(max-width: 560px)" />
     <link rel="stylesheet" href="style.css?v=mobile-layout" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -260,10 +260,10 @@
     #startScreen {
       display: block;
       padding: 0;
-      background: url("assets/its-my-turn-check-thumbnail.png") center / cover;
+      background: url("assets/its-my-turn-check-desktop-art.png") center / cover;
       background-image: image-set(
-        url("assets/its-my-turn-check-thumbnail.webp") type("image/webp"),
-        url("assets/its-my-turn-check-thumbnail.png") type("image/png")
+        url("assets/its-my-turn-check-desktop-art.webp") type("image/webp"),
+        url("assets/its-my-turn-check-desktop-art.png") type("image/png")
       );
       backdrop-filter: none;
     }
@@ -335,7 +335,17 @@
       font: 500 10px monospace;
       letter-spacing: 0.22em;
     }
-    #startScreen .start-title { display: none; }
+    #startScreen .start-title {
+      order: -1;
+      margin: 0 0 12px 1px;
+      color: #f3fbff;
+      font-family: "Bungee", sans-serif !important;
+      font-size: clamp(28px, 3.1vw, 48px);
+      font-weight: 400;
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      text-shadow: 2px 2px 0 #d66efd, 0 0 18px #53f0e4aa;
+    }
     #startScreen .start-dev {
       position: absolute;
       z-index: 2;
@@ -420,16 +430,7 @@
         transform: none;
       }
       #startScreen .start-title {
-        display: block;
-        order: -1;
-        margin: 0 0 12px 1px;
-        color: #f3fbff;
-        font-family: "Bungee", sans-serif !important;
         font-size: clamp(21px, 6.4vw, 30px);
-        font-weight: 400;
-        letter-spacing: -0.045em;
-        line-height: 1.05;
-        text-shadow: 2px 2px 0 #d66efd, 0 0 18px #53f0e4aa;
       }
       .build-version { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); font-size: 9px; }
       #startScreen .start-menu button { min-height: 50px; padding: 12px 19px; font-size: 16px; }
@@ -529,7 +530,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.27</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.28</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -611,6 +612,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.27"></script>
+    <script src="game.js?v=v0.10.28"></script>
   </body>
 </html>
