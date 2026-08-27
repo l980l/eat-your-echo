@@ -510,6 +510,10 @@
     ui.xp.textContent = S.player.xp + " / " + (3 + S.player.rank * 2);
     ui.score.textContent = S.score.toLocaleString();
   }
+  function gainXp(amount) {
+    let multiplier = S.player.piece === "king" ? 1.5 : 1;
+    S.player.xp = Math.round((S.player.xp + amount * multiplier) * 2) / 2;
+  }
   function chainMultiplier(chain) {
     return 1 + Math.min(9, Math.max(0, chain - 1)) * 0.25;
   }
@@ -597,6 +601,7 @@
       base = b.flatMap(([x, y]) =>
         Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
+      if (piece === "bishop") base.push([1, 0], [-1, 0], [0, 1], [0, -1]);
     }
     if (!p.traits?.includes("royalStep")) return base;
     let royal = king.flatMap(([x, y]) => [[x, y], [x * 2, y * 2]]);
@@ -686,7 +691,7 @@
     });
     S.enemies = S.enemies.filter((e) => !dead.includes(e));
     if (dead.length) {
-      S.player.xp += dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0);
+      gainXp(dead.reduce((sum, e) => sum + (e.risk ? 2 : 1), 0));
       S.kills += dead.length;
     }
     return {
@@ -1094,7 +1099,7 @@
       });
     }
     if (attacked && p.traits.includes("chainSpark")) {
-      p.xp++;
+      gainXp(1);
       traitFx("spark", p.x, p.y);
     }
     if (gained) {
@@ -1201,10 +1206,10 @@
         name = o.toUpperCase();
         desc = {
           knight: "L자 이동",
-          bishop: "대각선 3칸 이동",
+          bishop: "대각선 3칸 · 상하좌우 1칸",
           rook: "직선 3칸 이동",
           queen: "8방향 3칸 이동",
-          king: "8방향 1칸 이동",
+          king: "8방향 1칸 · XP ×1.5",
         }[o];
       } else {
         icon = o.icon;
@@ -1685,10 +1690,10 @@
     let pieceInfo = {
         pawn: "8방향 1칸",
         knight: "L자 이동",
-        bishop: "대각선 3칸 이동",
+        bishop: "대각선 3칸 · 상하좌우 1칸",
         rook: "직선 3칸 이동",
         queen: "8방향 3칸",
-        king: "8방향 1칸",
+        king: "8방향 1칸 · XP ×1.5",
       },
       options =
         kind === "piece"
