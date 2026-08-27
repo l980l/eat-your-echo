@@ -1184,7 +1184,7 @@
       reachX = Math.max(1, ...moves.map((m) => Math.abs(m.x - p.x))),
       reachY = Math.max(1, ...moves.map((m) => Math.abs(m.y - p.y))),
       fitted = Math.min(W / (reachX * 2 + 1.15), H / (reachY * 2 + 1.15));
-    return Math.max(base * 0.82, Math.min(base, fitted));
+    return Math.max(base * 0.7, Math.min(base, fitted));
   }
   function pos(x, y) {
     let s = size();
