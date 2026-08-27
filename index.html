@@ -230,6 +230,19 @@
       width: 30px;
       text-align: right;
     }
+    .tutorial-panel { max-width: 560px; text-align: left; }
+    .tutorial-step { margin: 0 0 10px; color: #53f0e4; font: 700 11px monospace; letter-spacing: .2em; }
+    .tutorial-panel h2 { margin-bottom: 13px; }
+    .tutorial-copy { min-height: 5.4em; margin: 0; color: #d9def2; line-height: 1.75; }
+    .tutorial-visual { display: flex; min-height: 75px; align-items: center; justify-content: center; gap: 8px; margin: 20px 0 16px; padding: 13px; border: 1px solid #ffffff22; background: #0c1125cc; }
+    .tutorial-flow { color: #d9def2; font: 700 14px monospace; letter-spacing: .04em; text-align: center; }
+    .tutorial-flow b { color: #53f0e4; }
+    .tutorial-swatch { width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 0 13px currentColor; }
+    .tutorial-item { padding: 8px 11px; border: 1px solid currentColor; color: #ffd166; font: 700 11px monospace; letter-spacing: .06em; }
+    .tutorial-boss { color: #53f0e4; font: 700 17px monospace; text-shadow: 0 0 15px #53f0e4; }
+    .tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .tutorial-actions button { margin: 0; }
+    .tutorial-skip { border-color: #ffffff44; background: transparent; color: #aeb7d3; box-shadow: none; }
     @media (max-width: 560px) {
       .sound-control {
         right: 10px;
@@ -238,6 +251,10 @@
       .sound-control label {
         bottom: 40px;
       }
+      .tutorial-panel { width: min(91vw, 560px); padding: 25px 19px; }
+      .tutorial-copy { min-height: 6.8em; font-size: 14px; }
+      .tutorial-visual { min-height: 68px; margin-top: 16px; }
+      .tutorial-swatch { width: 20px; height: 20px; }
     }
   </style>
   <style>
@@ -534,14 +551,28 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.34</b> · 2026.08.27</p>
+        <p class="build-version">BUILD <b>v0.10.35</b> · 2026.08.27</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
           <button class="start-button" id="startButton">PLAY</button>
           <button id="rankingButton">GLOBAL RANKING</button>
+          <button id="tutorialButton">HOW TO PLAY</button>
         </nav>
+      </section>
+      <section class="overlay hidden" id="tutorialScreen">
+        <div class="panel tutorial-panel">
+          <p class="tutorial-step" id="tutorialStep">01 / 04</p>
+          <p class="eyebrow" id="tutorialEyebrow">ONE MOVE · ONE BEAT</p>
+          <h2 id="tutorialTitle">빛나는 칸을 선택하세요</h2>
+          <p class="tutorial-copy" id="tutorialCopy"></p>
+          <div class="tutorial-visual" id="tutorialVisual"></div>
+          <div class="tutorial-actions">
+            <button class="tutorial-skip" id="tutorialSkip">건너뛰기</button>
+            <button id="tutorialNext">다음</button>
+          </div>
+        </div>
       </section>
       <section class="overlay hidden" id="upgradeScreen">
         <div class="panel upgrade">
@@ -616,6 +647,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.34"></script>
+    <script src="game.js?v=v0.10.35"></script>
   </body>
 </html>

@@ -35,6 +35,15 @@
       combo: $("#comboToast"),
       ranking: $("#rankingScreen"),
       rankingButton: $("#rankingButton"),
+      tutorial: $("#tutorialScreen"),
+      tutorialButton: $("#tutorialButton"),
+      tutorialStep: $("#tutorialStep"),
+      tutorialEyebrow: $("#tutorialEyebrow"),
+      tutorialTitle: $("#tutorialTitle"),
+      tutorialCopy: $("#tutorialCopy"),
+      tutorialVisual: $("#tutorialVisual"),
+      tutorialNext: $("#tutorialNext"),
+      tutorialSkip: $("#tutorialSkip"),
       gameOverRanking: $("#gameOverRanking"),
       mainMenuButton: $("#mainMenuButton"),
       rankingClose: $("#rankingClose"),
@@ -232,6 +241,66 @@
     ui.over.classList.add("hidden");
     ui.devBar.classList.add("hidden");
     ui.start.classList.remove("hidden");
+  }
+  const TUTORIAL_PAGES = [
+    {
+      eyebrow: "ONE MOVE · ONE BEAT",
+      title: "빛나는 칸을 선택하세요",
+      copy: "내 말은 빛나는 칸으로 한 번 움직입니다. 적을 처치하면 즉시 한 번 더 움직일 수 있지만, 처치하지 못하면 모든 적이 함께 한 수 움직입니다.",
+      visual: '<div class="tutorial-flow"><b>CAPTURE</b> → MOVE AGAIN &nbsp; / &nbsp; NO CAPTURE → ENEMY MOVE</div>',
+    },
+    {
+      eyebrow: "ENEMY DURABILITY",
+      title: "적의 색은 남은 내구도입니다",
+      copy: "빨강은 1회, 주황은 2회, 노랑부터 보라까지는 최대 7회 타격해야 처치됩니다. 장갑 적을 때려도 내 움직임은 유지되지만, 한 대마다 위험이 오래 남습니다.",
+      visual: '<div class="tutorial-swatch" style="color:#ff4d6d;background:#ff4d6d"></div><div class="tutorial-swatch" style="color:#ff9f43;background:#ff9f43"></div><div class="tutorial-swatch" style="color:#ffd166;background:#ffd166"></div><div class="tutorial-swatch" style="color:#6ee7b7;background:#6ee7b7"></div><div class="tutorial-swatch" style="color:#53f0e4;background:#53f0e4"></div><div class="tutorial-swatch" style="color:#758bff;background:#758bff"></div><div class="tutorial-swatch" style="color:#d66efd;background:#d66efd"></div>',
+    },
+    {
+      eyebrow: "FIELD ITEMS",
+      title: "아이템은 필드에 따로 나타납니다",
+      copy: "적을 잡은 자리에 떨어지는 것이 아닙니다. 적 이동이 끝날 때 확률적으로 빈 칸에 생성되며, 한 번에 하나만 존재합니다. 생성 후 14박자 안에 먹지 않으면 사라집니다.",
+      visual: '<div class="tutorial-item" style="color:#8eeaff">✦ AEGIS</div><div class="tutorial-item" style="color:#7dffb2">↔ STRIDE</div><div class="tutorial-item" style="color:#ffd166">▣ CHEST</div>',
+    },
+    {
+      eyebrow: "WAVE 30 · BOSS",
+      title: "철의 룩을 무너뜨리세요",
+      copy: "붉은 점선이 보이면 룩이 그 가로 또는 세로 줄을 관통합니다. 선 밖으로 피하면 코어가 청록색으로 열립니다. 금색 STRIKE 칸으로 이동해 한 대 때리면 내 턴은 유지됩니다.",
+      visual: '<div class="tutorial-boss">✕ LOCKED — DODGE LINE &nbsp; → &nbsp; ◆ CORE OPEN — STRIKE!</div>',
+    },
+  ];
+  let tutorialPage = 0,
+    tutorialStartsRun = false;
+  function renderTutorial() {
+    let page = TUTORIAL_PAGES[tutorialPage];
+    ui.tutorialStep.textContent = String(tutorialPage + 1).padStart(2, "0") + " / " + String(TUTORIAL_PAGES.length).padStart(2, "0");
+    ui.tutorialEyebrow.textContent = page.eyebrow;
+    ui.tutorialTitle.textContent = page.title;
+    ui.tutorialCopy.textContent = page.copy;
+    ui.tutorialVisual.innerHTML = page.visual;
+    ui.tutorialNext.textContent = tutorialPage === TUTORIAL_PAGES.length - 1 ? (tutorialStartsRun ? "시작하기" : "닫기") : "다음";
+    ui.tutorialSkip.textContent = tutorialStartsRun ? "건너뛰고 시작" : "닫기";
+  }
+  function openTutorial(startAfter = false) {
+    tutorialPage = 0;
+    tutorialStartsRun = startAfter;
+    renderTutorial();
+    ui.tutorial.classList.remove("hidden");
+  }
+  function beginRun() {
+    reset();
+    S.dev = ui.devToggle.checked;
+    ui.devBar.classList.toggle("hidden", !S.dev);
+    S.running = true;
+    startBgm();
+    ui.start.classList.add("hidden");
+  }
+  function closeTutorial(startRun = false) {
+    ui.tutorial.classList.add("hidden");
+    if (startRun || tutorialPage === TUTORIAL_PAGES.length - 1)
+      localStorage.setItem("its-my-turn-tutorial-seen", "1");
+    if (startRun) {
+      beginRun();
+    }
   }
   async function offerScoreSubmission(score) {
     ui.scoreSubmit.classList.add("hidden");
@@ -1849,13 +1918,17 @@
   }
   c.addEventListener("pointerdown", tap);
   $("#startButton").addEventListener("click", () => {
-    reset();
-    S.dev = ui.devToggle.checked;
-    ui.devBar.classList.toggle("hidden", !S.dev);
-    S.running = true;
-    startBgm();
-    ui.start.classList.add("hidden");
+    if (localStorage.getItem("its-my-turn-tutorial-seen")) beginRun();
+    else openTutorial(true);
   });
+  ui.tutorialButton.addEventListener("click", () => openTutorial(false));
+  ui.tutorialNext.addEventListener("click", () => {
+    if (tutorialPage < TUTORIAL_PAGES.length - 1) {
+      tutorialPage++;
+      renderTutorial();
+    } else closeTutorial(tutorialStartsRun);
+  });
+  ui.tutorialSkip.addEventListener("click", () => closeTutorial(tutorialStartsRun));
   $("#restartButton").addEventListener("click", () => {
     reset();
     ui.devSpeed.textContent = "[4] ×2 SPEED";
