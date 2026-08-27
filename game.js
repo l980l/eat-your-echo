@@ -1176,9 +1176,9 @@
   function size() {
     let base = Math.max(48, Math.min(76, Math.min(W, H) / 8.5)),
       p = S.player;
-    // Keep the normal board scale, but give a queen with LONG STRIDE a small
-    // mobile-only zoom-out so its five-square rays do not fall off-screen.
-    if (!p || !matchMedia("(max-width:560px)").matches || p.piece !== "queen" || !p.traits?.includes("longStride"))
+    // Keep the normal board scale, then zoom out only when any mobile move
+    // range would otherwise extend beyond the viewport.
+    if (!p || !matchMedia("(max-width:560px)").matches)
       return base;
     let moves = S.moves || [],
       reachX = Math.max(1, ...moves.map((m) => Math.abs(m.x - p.x))),
