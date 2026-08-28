@@ -356,8 +356,8 @@
     {
       eyebrow: "RISING TERRAIN",
       title: "웨이브가 오르면 보드도 바뀝니다",
-      copy: "벽은 장벽 형태로 나타나며 통과할 수 없고 장거리 이동도 막습니다. 파란 2×2 증폭 지대는 사거리 +1, 붉은 2×2 감쇠 지대는 사거리 −1입니다. 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
-      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#5a8dff"><b>^ AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#ff5577"><b>v INHIBITOR</b><span>2×2 구역 · 출발 시 사거리 −1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>▣ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
+      copy: "벽·증폭·감쇠 지대는 매번 연결된 랜덤 모양으로 나타납니다. 벽은 통과할 수 없고 장거리 이동도 막습니다. 파란 증폭 지대는 사거리 +1, 붉은 감쇠 지대는 사거리 −1입니다. 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>랜덤 연결 지형 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#5a8dff"><b>^ AMPLIFIER</b><span>랜덤 연결 지형 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#ff5577"><b>v INHIBITOR</b><span>랜덤 연결 지형 · 출발 시 사거리 −1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>▣ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
     },
   ];
   let tutorialPage = 0,
@@ -987,6 +987,20 @@
     }
     return null;
   }
+  function randomTerrainShape(type) {
+    let size = type === "wall" ? 3 + Math.floor(Math.random() * 4) : 3 + Math.floor(Math.random() * 3),
+      cells = [{ x: 0, y: 0 }],
+      dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (cells.length < size) {
+      let base = cells[Math.floor(Math.random() * cells.length)],
+        [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)],
+        next = { x: base.x + dx, y: base.y + dy };
+      if (!cells.some((cell) => cell.x === next.x && cell.y === next.y)) cells.push(next);
+    }
+    let minX = Math.min(...cells.map((cell) => cell.x)),
+      minY = Math.min(...cells.map((cell) => cell.y));
+    return cells.map((cell) => ({ x: cell.x - minX, y: cell.y - minY }));
+  }
   function addTerrain(type) {
     if (type === "wormhole") {
       let a = terrainSpot(5),
@@ -999,15 +1013,7 @@
       S.terrainNotice = "새 지형: 웜홀 — 같은 색의 출구로 이동합니다.";
       return true;
     }
-    let patterns =
-        type === "wall"
-          ? [
-              [[0, 0], [1, 0], [2, 0]],
-              [[0, 0], [0, 1], [0, 2]],
-              [[0, 0], [1, 0], [0, 1]],
-            ]
-          : [[[0, 0], [1, 0], [0, 1], [1, 1]]],
-      pattern = patterns[Math.floor(Math.random() * patterns.length)],
+    let pattern = randomTerrainShape(type),
       cells = null;
     for (let i = 0; i < 28; i++) {
       let spot = terrainSpot(5);
@@ -1032,10 +1038,10 @@
       inhibitor = type === "inhibitor";
     cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#5a8dff" : inhibitor ? "#ff5577" : "#6d718d", 10));
     S.terrainNotice = amplifier
-      ? "새 지형: 증폭 지대 — 2×2 구역에서 출발하면 사거리가 +1입니다."
+      ? "새 지형: 증폭 지대 — 랜덤 구역에서 출발하면 사거리가 +1입니다."
       : inhibitor
-        ? "새 지형: 감쇠 지대 — 2×2 구역에서 출발하면 사거리가 −1입니다."
-        : "새 지형: 벽 — 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
+        ? "새 지형: 감쇠 지대 — 랜덤 구역에서 출발하면 사거리가 −1입니다."
+        : "새 지형: 벽 — 랜덤 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
     return true;
   }
   function spawnTerrainByWave() {
