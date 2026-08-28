@@ -24,6 +24,7 @@
       devBar: $("#devBar"),
       devToggle: $("#devToggle"),
       devSpeed: $("#devSpeed"),
+      devAuto: $("#devAuto"),
       devPick: $("#devPickScreen"),
       devPickTitle: $("#devPickTitle"),
       devPickOptions: $("#devPickOptions"),
@@ -82,6 +83,8 @@
       running: false,
       dev: false,
       devSpeed: 1,
+      autoPlay: false,
+      autoElapsed: 0,
       phase: "enemy",
       elapsed: 0,
       beat: 1.65,
@@ -589,6 +592,9 @@
     S.itemCooldown = S.invincibleBeats = S.rangeBoostMoves = S.extendedMoves = 0;
     S.displayChain = 0;
     S.devSpeed = 1;
+    S.autoPlay = false;
+    S.autoElapsed = 0;
+    ui.devAuto.textContent = "[8] AUTO OFF";
     S.beat = 0.45;
     S.grace = 3;
     S.camera = { x: 0, y: 0 };
@@ -1847,6 +1853,13 @@
         ui.meter.style.width = Math.min(100, S.displayChain * (100 / 7)) + "%";
         ui.meter.style.background = comboColor;
         ui.meter.style.boxShadow = "0 0 15px " + comboColor;
+        if (S.autoPlay) {
+          S.autoElapsed += dt;
+          if (S.autoElapsed >= 0.28) {
+            S.autoElapsed = 0;
+            autoMove();
+          }
+        }
       } else if (S.phase === "captured") {
         S.captureTimer -= dt;
         ui.meter.style.width = Math.max(0, S.captureTimer / 0.34) * 100 + "%";
@@ -1857,6 +1870,18 @@
         ui.meter.style.width = Math.max(0, S.death / 1.1) * 100 + "%";
         ui.meter.style.background = "#ff315d";
         if (S.death <= 0) over();
+      } else if (S.phase === "upgrade" && S.autoPlay) {
+        S.autoElapsed += dt;
+        if (S.autoElapsed >= 0.55 && performance.now() >= (S.upgradeLock || 0)) {
+          S.autoElapsed = 0;
+          chooseUpgrade(Math.floor(Math.random() * S.upgradeOptions.length));
+        }
+      } else if (S.phase === "risk" && S.autoPlay) {
+        S.autoElapsed += dt;
+        if (S.autoElapsed >= 0.55) {
+          S.autoElapsed = 0;
+          resolveRisk(Math.random() < 0.5);
+        }
       } else ui.meter.style.width = "100%";
     }
     draw();
@@ -1911,6 +1936,25 @@
     moves();
     hud();
     ui.hint.textContent = "DEV: IRON ROOK를 소환했습니다.";
+  }
+  function autoMove() {
+    if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
+    let candidates = S.moves.map((m) => {
+      let target = S.enemies.find((e) => e.x === m.x && e.y === m.y),
+        nearest = Math.min(...S.enemies.map((e) => Math.abs(e.x - m.x) + Math.abs(e.y - m.y)), 99),
+        score = target ? 600 - (target.hp || 1) * 5 : -nearest * 8;
+      if (target?.boss && target.bossPhase === "vulnerable") score += 2000;
+      return { m, score: score + Math.random() * 12 };
+    });
+    candidates.sort((a, b) => b.score - a.score);
+    playerMove(candidates[0].m);
+  }
+  function devAuto() {
+    if (!S.running || ["upgrade", "dead", "devpick"].includes(S.phase)) return;
+    S.autoPlay = !S.autoPlay;
+    S.autoElapsed = 0;
+    ui.devAuto.textContent = "[8] AUTO " + (S.autoPlay ? "ON" : "OFF");
+    ui.hint.textContent = S.autoPlay ? "DEV: 자동 플레이를 시작합니다." : "DEV: 자동 플레이를 멈췄습니다.";
   }
   function closeDevPick() {
     ui.devPick.classList.add("hidden");
@@ -2003,6 +2047,7 @@
   $("#devPiece").addEventListener("click", () => openDevPick("piece"));
   $("#devTrait").addEventListener("click", () => openDevPick("trait"));
   $("#devBoss").addEventListener("click", devBoss);
+  $("#devAuto").addEventListener("click", devAuto);
   $("#devPickClose").addEventListener("click", closeDevPick);
   document.addEventListener("keydown", (e) => {
     if (!S.dev) return;
@@ -2014,6 +2059,7 @@
     if (k === "5") openDevPick("piece");
     if (k === "6") openDevPick("trait");
     if (k === "7") devBoss();
+    if (k === "8") devAuto();
     if (k === "d") ui.devBar.classList.toggle("hidden");
   });
   document.addEventListener(
