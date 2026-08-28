@@ -1797,7 +1797,7 @@
       g.font = "700 " + s * 0.31 + "px monospace";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText("+1", 0, 1);
+      g.fillText("^", 0, 1);
     } else if (tile.type === "wormhole") {
       let colors = ["#b971ff", "#53f0e4", "#ff72c9"],
         col = colors[(tile.pair - 1) % colors.length];
