@@ -284,19 +284,19 @@
       eyebrow: "FIELD ITEMS",
       title: "아이템은 필드에 따로 나타납니다",
       copy: "아이템은 적을 잡은 자리에 떨어지지 않아요. 적들이 움직인 뒤, 보드의 빈 칸에 가끔 나타납니다. 보드 위에는 동시에 2개 이상의 아이템이 있을 수 없고, 14턴 동안 먹지 않으면 사라집니다.",
-      visual: '<div class="tutorial-item" style="color:#8eeaff">✦ AEGIS</div><div class="tutorial-item" style="color:#7dffb2">↔ STRIDE</div><div class="tutorial-item" style="color:#ffd166">▣ CHEST</div>',
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#8eeaff"><b>✦ KING’S AEGIS</b><span>다음 적 턴 2회 동안 무적</span></div><div class="tutorial-entry" style="color:#7dffb2"><b>↔ LONG STRIDE RUNE</b><span>다음 3회 이동 사거리 +2</span></div><div class="tutorial-entry" style="color:#e6e9ff"><b>☾ SILVER NECKLACE</b><span>비처치 이동 2회도 턴 유지</span></div><div class="tutorial-entry" style="color:#ffd166"><b>ϟ JUDGEMENT</b><span>보드 위 모든 적에게 1 피해</span></div><div class="tutorial-entry" style="color:#ffba47"><b>▣ TREASURE CHEST</b><span>현재 웨이브 × 100점 획득</span></div></div>',
     },
     {
       eyebrow: "BOSS MONSTER",
       title: "보스 몬스터",
-      copy: "보스 몬스터는 일반 적과 다르게 특수한 기믹을 갖고 있습니다. 상태 표시와 공격 예고를 잘 보고 조심해서 상대하세요.",
-      visual: '<div class="tutorial-boss-demo"><div class="tutorial-boss-piece">♜<small>IRON ROOK · 5/5</small></div><div class="tutorial-boss-line"></div><div class="tutorial-boss-state">LOCKED<br/>DODGE LINE</div></div>',
+      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. 빨간 점선의 가로 또는 세로 줄 밖으로 피하세요. 청록 CORE OPEN 상태가 되면 금색 STRIKE 칸에서 공격할 수 있고, 공격 뒤에도 내 턴이 이어집니다.",
+      visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♜</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♜</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
     },
     {
       eyebrow: "RISING TERRAIN",
       title: "웨이브가 오르면 보드도 바뀝니다",
       copy: "벽은 통과할 수 없고 장거리 이동도 막습니다. 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
-      visual: '<div class="tutorial-item" style="color:#aeb7d3">▦ WALL</div><div class="tutorial-item" style="color:#ffd166">+1 AMPLIFY</div><div class="tutorial-item" style="color:#b971ff">◉ WORMHOLE</div>',
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>플레이어·적 모두 통과 불가</span></div><div class="tutorial-entry" style="color:#ffd166"><b>+1 AMPLIFIER</b><span>이 칸에서 출발하면 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
     },
   ];
   let tutorialPage = 0,
