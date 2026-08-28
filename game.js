@@ -43,6 +43,7 @@
       tutorialTitle: $("#tutorialTitle"),
       tutorialCopy: $("#tutorialCopy"),
       tutorialVisual: $("#tutorialVisual"),
+      tutorialPrev: $("#tutorialPrev"),
       tutorialNext: $("#tutorialNext"),
       tutorialSkip: $("#tutorialSkip"),
       gameOverRanking: $("#gameOverRanking"),
@@ -262,27 +263,27 @@
   }
   const TUTORIAL_PAGES = [
     {
-      eyebrow: "ONE MOVE · ONE BEAT",
+      eyebrow: "ONE MOVE · ONE TURN",
       title: "빛나는 칸을 선택하세요",
       copy: "빛나는 칸 하나를 골라 움직이세요. 적을 밟아 처치하면 바로 한 번 더 움직일 수 있어요. 아무도 잡지 못한 채 턴을 끝내면, 그때 적들이 한꺼번에 움직입니다.",
-      visual: '<div class="tutorial-flow"><b>CAPTURE</b> → MOVE AGAIN &nbsp; / &nbsp; NO CAPTURE → ENEMY MOVE</div>',
+      visual: '<div class="tutorial-flow"><b>CAPTURE</b> → MOVE AGAIN &nbsp; / &nbsp; NO CAPTURE → ENEMY TURN</div>',
     },
     {
       eyebrow: "ENEMY DURABILITY",
       title: "적의 색은 남은 내구도입니다",
-      copy: "빨강은 한 번, 주황은 두 번 때리면 처치됩니다. 노랑부터 보라까지 갈수록 더 많이 때려야 해요. 장갑 적을 때려도 내 턴은 이어지지만, 적을 오래 살려두는 만큼 판이 복잡해집니다.",
+      copy: "빨강은 한 번, 주황은 두 번 때리면 처치됩니다. 노랑부터 보라까지 갈수록 더 많이 때려야 해요. 적의 내구도만 낮춰도 내 턴은 이어지지만, 적을 오래 살려두는 만큼 판이 복잡해집니다.",
       visual: '<div class="tutorial-swatch" style="color:#ff4d6d;background:#ff4d6d"></div><div class="tutorial-swatch" style="color:#ff9f43;background:#ff9f43"></div><div class="tutorial-swatch" style="color:#ffd166;background:#ffd166"></div><div class="tutorial-swatch" style="color:#6ee7b7;background:#6ee7b7"></div><div class="tutorial-swatch" style="color:#53f0e4;background:#53f0e4"></div><div class="tutorial-swatch" style="color:#758bff;background:#758bff"></div><div class="tutorial-swatch" style="color:#d66efd;background:#d66efd"></div>',
     },
     {
       eyebrow: "FIELD ITEMS",
       title: "아이템은 필드에 따로 나타납니다",
-      copy: "아이템은 적을 잡은 자리에 떨어지지 않아요. 적들이 움직인 뒤, 보드의 빈 칸에 가끔 나타납니다. 한 번에 하나만 남아 있고 14박자 안에 먹지 않으면 사라집니다.",
+      copy: "아이템은 적을 잡은 자리에 떨어지지 않아요. 적들이 움직인 뒤, 보드의 빈 칸에 가끔 나타납니다. 한 번에 하나만 남아 있고 14턴 동안 먹지 않으면 사라집니다.",
       visual: '<div class="tutorial-item" style="color:#8eeaff">✦ AEGIS</div><div class="tutorial-item" style="color:#7dffb2">↔ STRIDE</div><div class="tutorial-item" style="color:#ffd166">▣ CHEST</div>',
     },
     {
-      eyebrow: "WAVE 30 · BOSS",
-      title: "30웨이브부터 IRON ROOK 등장",
-      copy: "붉은 점선이 보이면 룩이 그 줄을 그대로 관통합니다. 선 밖으로 빠지면 보스가 청록색으로 바뀌고, 금색 STRIKE 칸에서 공격할 수 있어요. 한 대 때린 뒤에도 내 턴은 이어집니다.",
+      eyebrow: "BOSS MONSTER",
+      title: "보스 몬스터",
+      copy: "보스 몬스터는 일반 적과 다르게 특수한 기믹을 갖고 있습니다. 상태 표시와 공격 예고를 잘 보고 조심해서 상대하세요.",
       visual: '<div class="tutorial-boss-demo"><div class="tutorial-boss-piece">♜<small>IRON ROOK · 5/5</small></div><div class="tutorial-boss-line"></div><div class="tutorial-boss-state">LOCKED<br/>DODGE LINE</div></div>',
     },
   ];
@@ -295,6 +296,7 @@
     ui.tutorialTitle.textContent = page.title;
     ui.tutorialCopy.textContent = page.copy;
     ui.tutorialVisual.innerHTML = page.visual;
+    ui.tutorialPrev.disabled = tutorialPage === 0;
     ui.tutorialNext.textContent = tutorialPage === TUTORIAL_PAGES.length - 1 ? (tutorialStartsRun ? "시작하기" : "닫기") : "다음";
     ui.tutorialSkip.textContent = tutorialStartsRun ? "건너뛰고 시작" : "닫기";
   }
@@ -1951,6 +1953,11 @@
     else openTutorial(true);
   });
   ui.tutorialButton.addEventListener("click", () => openTutorial(false));
+  ui.tutorialPrev.addEventListener("click", () => {
+    if (tutorialPage === 0) return;
+    tutorialPage--;
+    renderTutorial();
+  });
   ui.tutorialNext.addEventListener("click", () => {
     if (tutorialPage < TUTORIAL_PAGES.length - 1) {
       tutorialPage++;

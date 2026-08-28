@@ -246,6 +246,7 @@
     .tutorial-boss-state { color: #ffb3c1; font: 700 10px monospace; letter-spacing: .05em; }
     .tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .tutorial-actions button { margin: 0; }
+    .tutorial-actions button:disabled { cursor: default; opacity: .3; filter: none; transform: none; }
     .tutorial-skip { border-color: #ffffff44; background: transparent; color: #aeb7d3; box-shadow: none; }
     @media (max-width: 560px) {
       .sound-control {
@@ -558,7 +559,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.37</b> · 2026.08.28</p>
+        <p class="build-version">BUILD <b>v0.10.38</b> · 2026.08.28</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -577,6 +578,7 @@
           <div class="tutorial-visual" id="tutorialVisual"></div>
           <div class="tutorial-actions">
             <button class="tutorial-skip" id="tutorialSkip">건너뛰기</button>
+            <button class="tutorial-skip" id="tutorialPrev">이전</button>
             <button id="tutorialNext">다음</button>
           </div>
         </div>
@@ -655,6 +657,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.37"></script>
+    <script src="game.js?v=v0.10.38"></script>
   </body>
 </html>
