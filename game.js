@@ -736,6 +736,8 @@
       enemies: S.enemies.map((enemy) => ({ ...enemy, face: enemy.face && { ...enemy.face }, safeCells: enemy.safeCells?.map((cell) => ({ ...cell })) })),
       items: S.items.map((item) => ({ ...item })),
       terrain: S.terrain.map((tile) => ({ ...tile })),
+      trail: S.trail.map((trail) => ({ ...trail, via: trail.via && { ...trail.via } })),
+      enemyTrail: S.enemyTrail.map((trail) => ({ ...trail, via: trail.via && { ...trail.via } })),
     };
     S.rewindHistory.push(snapshot);
     if (S.rewindHistory.length > 5) S.rewindHistory.shift();
@@ -2120,6 +2122,53 @@
     for (let y = cy - rows; y <= cy + rows; y++)
       for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
     snapshot.terrain.forEach(terrainTile);
+    // Each snapshot preserves the movement that led into this board state.
+    // Player paths stay solid cyan; every enemy move in the beat stays red and dashed.
+    if (snapshot.trail?.length) {
+      g.save();
+      g.strokeStyle = "#53f0e4";
+      g.shadowColor = "#53f0e4";
+      g.shadowBlur = 18;
+      g.lineWidth = 5;
+      g.lineJoin = "round";
+      g.lineCap = "round";
+      g.beginPath();
+      let first = pos(snapshot.trail[0].x1, snapshot.trail[0].y1);
+      g.moveTo(first.x, first.y);
+      snapshot.trail.forEach((trail) => {
+        if (trail.via) {
+          let via = pos(trail.via.x, trail.via.y);
+          g.lineTo(via.x, via.y);
+        }
+        let end = pos(trail.x2, trail.y2);
+        g.lineTo(end.x, end.y);
+      });
+      g.stroke();
+      g.restore();
+    }
+    if (snapshot.enemyTrail?.length) {
+      g.save();
+      g.strokeStyle = "#ff5577";
+      g.shadowColor = "#ff315d";
+      g.shadowBlur = 12;
+      g.globalAlpha = 0.82;
+      g.lineWidth = 2.5;
+      g.lineCap = "round";
+      g.setLineDash([7, 7]);
+      snapshot.enemyTrail.forEach((trail) => {
+        let start = pos(trail.x1, trail.y1),
+          end = pos(trail.x2, trail.y2);
+        g.beginPath();
+        g.moveTo(start.x, start.y);
+        if (trail.via) {
+          let via = pos(trail.via.x, trail.via.y);
+          g.lineTo(via.x, via.y);
+        }
+        g.lineTo(end.x, end.y);
+        g.stroke();
+      });
+      g.restore();
+    }
     snapshot.items.forEach(fieldItem);
     snapshot.enemies.forEach((enemy) => piece(enemy.x, enemy.y, enemy.type, true, enemy.hp || 1, enemy.maxHp || 1, enemy.risk, enemy.boss, enemy.bossPhase, enemy.bossName, enemy.seals, enemy.enraged));
     piece(snapshot.player.x, snapshot.player.y, snapshot.player.piece);
@@ -2128,7 +2177,7 @@
     g.fillRect(0, 0, W, 74);
     g.strokeStyle = "#ff5577";
     g.globalAlpha = 0.72;
-    g.strokeRect(16, 13, W - 32, 48);
+    g.strokeRect(16, 13, W - 32, 62);
     g.globalAlpha = 1;
     g.textAlign = "center";
     g.textBaseline = "middle";
@@ -2138,6 +2187,9 @@
     g.font = "700 14px 'Gowun Batang', serif";
     g.fillStyle = "#eff4ff";
     g.fillText(snapshot.label, W / 2, 48);
+    g.font = "700 9px monospace";
+    g.fillStyle = "#9beee9";
+    g.fillText("청록 실선: 내 이동 · 붉은 점선: 적 이동", W / 2, 67);
     g.restore();
     S.camera = savedCamera;
   }
