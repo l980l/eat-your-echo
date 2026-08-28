@@ -1879,6 +1879,32 @@
       })
       .filter(Boolean);
   }
+  function edgeEnemyTargets() {
+    let margin = 42,
+      candidates = S.enemies
+        .map((e) => {
+          let q = pos(e.x, e.y),
+            offscreen = q.x < -margin || q.x > W + margin || q.y < -margin || q.y > H + margin,
+            danger = e.boss
+              ? e.bossPhase === "telegraph" && bossLineThreat(e)
+              : toward(e).x === S.player.x && toward(e).y === S.player.y;
+          if (!offscreen) return null;
+          return { e, q, danger, distance: dist(e, S.player) };
+        })
+        .filter(Boolean)
+        .sort((a, b) => Number(b.e.boss) - Number(a.e.boss) || a.distance - b.distance)
+        .slice(0, 3);
+    return candidates.map((target, index) => {
+      let dx = target.q.x - W / 2,
+        dy = target.q.y - H / 2,
+        scale = Math.min((W / 2 - margin) / Math.max(1, Math.abs(dx)), (H / 2 - margin) / Math.max(1, Math.abs(dy))),
+        angle = Math.atan2(dy, dx),
+        offset = (index - (candidates.length - 1) / 2) * 42,
+        x = W / 2 + dx * scale - Math.sin(angle) * offset,
+        y = H / 2 + dy * scale + Math.cos(angle) * offset;
+      return { ...target, x: Math.max(margin, Math.min(W - margin, x)), y: Math.max(margin, Math.min(H - margin, y)), angle };
+    });
+  }
   function draw() {
     g.clearRect(0, 0, W, H);
     let s = size(),
@@ -2110,6 +2136,47 @@
       g.lineTo(-6, 7);
       g.closePath();
       g.fill();
+      g.restore();
+    });
+    edgeEnemyTargets().forEach((target) => {
+      let e = target.e,
+        pulse = target.danger ? 0.62 + Math.sin(performance.now() / 95) * 0.38 : 1,
+        color = target.danger ? "#ff315d" : e.boss ? "#ffd166" : COMBO_COLORS[Math.max(0, Math.min(6, (e.hp || 1) - 1))],
+        icon = enemyGlyph[e.type];
+      g.save();
+      g.globalAlpha = pulse;
+      g.translate(target.x, target.y);
+      g.rotate(target.angle);
+      g.fillStyle = color;
+      g.shadowColor = color;
+      g.shadowBlur = target.danger ? 24 : 14;
+      g.beginPath();
+      g.moveTo(19, 0);
+      g.lineTo(4, -9);
+      g.lineTo(4, 9);
+      g.closePath();
+      g.fill();
+      g.restore();
+      g.save();
+      g.globalAlpha = pulse;
+      g.fillStyle = "#0d1330";
+      g.strokeStyle = color;
+      g.shadowColor = color;
+      g.shadowBlur = target.danger ? 22 : 12;
+      g.lineWidth = e.boss ? 3 : 2;
+      g.beginPath();
+      g.arc(target.x, target.y, e.boss ? 20 : 16, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = color;
+      g.font = "700 " + (e.boss ? 27 : 21) + "px Georgia, serif";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(icon, target.x, target.y + 1);
+      if (e.boss || target.danger) {
+        g.font = "700 9px monospace";
+        g.fillText(target.danger ? "CHECK!" : "BOSS", target.x, target.y - (e.boss ? 30 : 25));
+      }
       g.restore();
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
