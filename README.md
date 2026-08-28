@@ -53,3 +53,10 @@ npx serve .
 - Vanilla HTML / CSS / JavaScript
 - Canvas 2D
 - GitHub Pages
+- Supabase Edge Function + RLS leaderboard verification
+
+## 랭킹 보안
+
+랭킹 테이블은 공개 읽기만 허용합니다. 점수 기록은 `leaderboard` Edge Function이 발급한 실행 토큰과 서버 기준 경과 시간을 검증한 뒤에만 저장됩니다. 따라서 공개 API로 테이블에 직접 점수를 POST하는 방식은 차단됩니다.
+
+Supabase 구성은 `supabase/migrations/`와 `supabase/functions/leaderboard/`에 있습니다. 배포 환경에는 `RUN_TOKEN_SECRET`이 필요하며, 이 값은 저장소에 포함하지 않습니다.

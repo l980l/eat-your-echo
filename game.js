@@ -116,6 +116,8 @@
       kills: 0,
       score: 0,
       chain: 0,
+      runTicket: null,
+      runRequestId: 0,
       camera: { x: 0, y: 0 },
       player: null,
       enemies: [],
@@ -195,6 +197,30 @@
     }
     let body = await response.text();
     return body ? JSON.parse(body) : null;
+  }
+  async function leaderboardFunction(body) {
+    let response = await fetch(SUPABASE_URL + "/functions/v1/leaderboard", {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    let result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Leaderboard verification failed");
+    return result;
+  }
+  async function startVerifiedRun() {
+    S.runTicket = null;
+    let requestId = ++S.runRequestId;
+    try {
+      let ticket = await leaderboardFunction({ action: "start" });
+      if (S.runRequestId === requestId) S.runTicket = ticket;
+    } catch (_) {
+      if (S.runRequestId === requestId) S.runTicket = { failed: true };
+    }
   }
   function renderLeaderboard(rows, offset = 0) {
     ui.leaderboardList.textContent = "";
@@ -358,6 +384,7 @@
     S.pre = ui.preToggle.checked && devUnlocked;
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
+    startVerifiedRun();
     startBgm();
     ui.start.classList.add("hidden");
   }
@@ -418,6 +445,10 @@
       return;
     }
     if (!Number.isInteger(score) || score <= 0) return;
+    if (!S.runTicket || S.runTicket.failed) {
+      ui.scoreStatus.textContent = "검증된 게임 기록을 준비하지 못했습니다. 새 게임으로 다시 도전해주세요.";
+      return;
+    }
     let lastSubmit = Number(localStorage.getItem("its-my-turn-last-score-submit") || 0);
     if (Date.now() - lastSubmit < 15000) {
       ui.scoreStatus.textContent = "기록 등록은 잠시 후 다시 시도해주세요.";
@@ -426,10 +457,13 @@
     ui.scoreButton.disabled = true;
     ui.scoreStatus.textContent = "기록을 남기는 중…";
     try {
-      await leaderboardRequest("leaderboard", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ name, score, message }),
+      await leaderboardFunction({
+        action: "submit",
+        runId: S.runTicket.runId,
+        runToken: S.runTicket.runToken,
+        name,
+        score,
+        message,
       });
       localStorage.setItem("its-my-turn-last-score-submit", String(Date.now()));
       ui.scoreSubmit.classList.add("hidden");
