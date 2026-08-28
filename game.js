@@ -138,6 +138,11 @@
           : { x: a.x, y: b.y }
         : null;
     };
+  const BOSS_TYPES = {
+    rook: { name: "IRON ROOK", hp: 5, xp: 5, score: 5000, axes: ["row", "column"] },
+    bishop: { name: "VOID BISHOP", hp: 6, xp: 6, score: 6500, axes: ["diagDown", "diagUp"] },
+    queen: { name: "CROWN QUEEN", hp: 7, xp: 8, score: 8000, axes: ["row", "column", "diagDown", "diagUp"] },
+  };
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
     LEADERBOARD_LIMIT = 10,
@@ -289,8 +294,8 @@
     {
       eyebrow: "BOSS MONSTER",
       title: "보스 몬스터",
-      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. 빨간 점선의 가로 또는 세로 줄 밖으로 피하세요. 청록 CORE OPEN 상태가 되면 금색 STRIKE 칸에서 공격할 수 있고, 공격 뒤에도 내 턴이 이어집니다.",
-      visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♜</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♜</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
+      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. 점선 밖으로 피한 뒤 청록 CORE OPEN 상태의 보스를 공격하세요. 공격 뒤에도 내 턴이 이어집니다.",
+      visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♛</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♛</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
     },
     {
       eyebrow: "RISING TERRAIN",
@@ -841,13 +846,13 @@
     });
     S.enemies = S.enemies.filter((e) => !dead.includes(e));
     if (dead.length) {
-      gainXp(dead.reduce((sum, e) => sum + (e.boss ? 5 : e.risk ? 2 : 1), 0));
+      gainXp(dead.reduce((sum, e) => sum + (e.boss ? e.bossXp : e.risk ? 2 : 1), 0));
       S.kills += dead.length;
     }
     return {
       hits: victims.length,
       kills: dead.length,
-      points: dead.reduce((sum, e) => sum + (e.boss ? 5000 : 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1)), 0),
+      points: dead.reduce((sum, e) => sum + (e.boss ? e.bossScore : 100 * (e.maxHp || 1) * (e.risk ? 1.5 : 1)), 0),
     };
   }
   function rollFieldItem() {
@@ -1047,8 +1052,22 @@
   function boss() {
     return S.enemies.find((e) => e.boss);
   }
-  function spawnRookBoss() {
+  function bossLineThreat(e, target = S.player) {
+    if (e.bossAxis === "row") return target.y === e.y;
+    if (e.bossAxis === "column") return target.x === e.x;
+    if (e.bossAxis === "diagDown") return target.x - e.x === target.y - e.y;
+    return target.x - e.x === -(target.y - e.y);
+  }
+  function bossAxisName(axis) {
+    return axis === "row" ? "가로" : axis === "column" ? "세로" : axis === "diagDown" ? "↘ 대각선" : "↗ 대각선";
+  }
+  function nextBossKind() {
+    return ["rook", "bishop", "queen"][(Math.floor(S.wave / 30) - 1) % 3];
+  }
+  function spawnBoss(kind = nextBossKind()) {
     if (boss()) return;
+    let data = BOSS_TYPES[kind];
+    if (!data) return;
     let p = S.player,
       spots = [[0, -4], [4, 0], [0, 4], [-4, 0]]
         .sort(() => Math.random() - 0.5)
@@ -1058,27 +1077,31 @@
     S.enemies.push({
       x: q.x,
       y: q.y,
-      type: "rook",
-      hp: 5,
-      maxHp: 5,
+      type: kind,
+      hp: data.hp,
+      maxHp: data.hp,
       boss: true,
+      bossName: data.name,
+      bossXp: data.xp,
+      bossScore: data.score,
       bossPhase: "telegraph",
-      bossAxis: Math.random() < 0.5 ? "row" : "column",
+      bossAxis: data.axes[Math.floor(Math.random() * data.axes.length)],
     });
     burst(q.x, q.y, "#ff5577", 42);
   }
-  function advanceRookBoss() {
+  function advanceBoss() {
     let e = boss();
     if (!e) return null;
     if (e.bossPhase === "telegraph") {
-      let hit = e.bossAxis === "row" ? S.player.y === e.y : S.player.x === e.x;
+      let hit = bossLineThreat(e);
       if (hit) return { boss: e, from: { x: e.x, y: e.y } };
       e.bossPhase = "vulnerable";
       burst(e.x, e.y, "#53f0e4", 28);
       return null;
     }
     e.bossPhase = "telegraph";
-    e.bossAxis = Math.random() < 0.5 ? "row" : "column";
+    let axes = BOSS_TYPES[e.type].axes;
+    e.bossAxis = axes[Math.floor(Math.random() * axes.length)];
     return null;
   }
   function toward(e, target = S.player) {
@@ -1156,7 +1179,7 @@
     S.player.slipUsed = false;
     S.player.slipCooldown = Math.max(0, (S.player.slipCooldown || 0) - 1);
     sfx("enemy");
-    let bossStrike = advanceRookBoss();
+    let bossStrike = advanceBoss();
     if (bossStrike && !invulnerable) {
       let e = bossStrike.boss;
       e.x = S.player.x;
@@ -1167,8 +1190,8 @@
       S.captureTimer = 0.34;
       S.flash = 0;
       ui.phase.textContent = "CHECKMATE";
-      ui.beat.textContent = "ROOK STRIKE";
-      ui.hint.textContent = "철의 룩이 예고한 줄을 관통했습니다.";
+      ui.beat.textContent = "BOSS STRIKE";
+      ui.hint.textContent = e.bossName + "의 예고선을 피하지 못했습니다.";
       return;
     }
     if (bossStrike && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 26);
@@ -1220,7 +1243,7 @@
     S.grace = Math.max(0, S.grace - 1);
     let enemySpawns = S.wave % 4 === 0 ? 2 : 1;
     for (let i = 0; i < enemySpawns; i++) spawn();
-    if (S.wave % 30 === 0) spawnRookBoss();
+    if (S.wave % 30 === 0) spawnBoss();
     spawnTerrainByWave();
     if (Math.random() < 1 - Math.pow(0.92, enemySpawns)) spawnFieldItem();
     if (S.riskBeats > 0) S.riskBeats--;
@@ -1245,15 +1268,15 @@
     }
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
-    let ironRook = boss();
+    let activeBoss = boss();
     let terrainNotice = S.terrainNotice;
     S.terrainNotice = "";
     ui.hint.textContent = terrainNotice || (S.grace
       ? "준비 박자 " + S.grace + " — 아직은 잡히지 않습니다."
-      : ironRook?.bossPhase === "telegraph"
-        ? "철의 룩이 " + (ironRook.bossAxis === "row" ? "가로" : "세로") + " 줄을 예고합니다 — 붉은 선 밖으로 이동하세요."
-        : ironRook?.bossPhase === "vulnerable"
-          ? "철의 룩 코어 노출! 지금 룩을 밟아 피해를 주세요."
+      : activeBoss?.bossPhase === "telegraph"
+        ? activeBoss.bossName + "의 " + bossAxisName(activeBoss.bossAxis) + " 줄 예고 — 붉은 선 밖으로 이동하세요."
+        : activeBoss?.bossPhase === "vulnerable"
+          ? activeBoss.bossName + " 코어 노출! 지금 보스를 밟아 피해를 주세요."
       : S.riskBeats
         ? "위험 계약 " + S.riskBeats + "박자 남음 — 강화 적 처치 시 XP ×2 · 점수 ×1.5"
         : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.");
@@ -1692,7 +1715,7 @@
     }
     g.restore();
   }
-  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "") {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "") {
     let q = pos(x, y),
       s = size(),
       // The color communicates remaining hits, not the enemy's original maximum.
@@ -1736,7 +1759,7 @@
       g.fillText(bossStatus, q.x, q.y - s * 0.73);
       g.fillStyle = "#fff0f4";
       g.font = "700 " + s * 0.15 + "px monospace";
-      g.fillText("IRON ROOK · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
+      g.fillText((bossName || "BOSS") + " · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
     }
     g.restore();
   }
@@ -1784,9 +1807,10 @@
     for (let y = cy - rows; y <= cy + rows; y++)
       for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
     S.terrain.forEach(terrainTile);
-    let ironRook = boss();
-    if (ironRook?.bossPhase === "telegraph") {
-      let q = pos(ironRook.x, ironRook.y);
+    let activeBoss = boss();
+    if (activeBoss?.bossPhase === "telegraph") {
+      let q = pos(activeBoss.x, activeBoss.y),
+        span = Math.max(W, H) * 1.5;
       g.save();
       g.globalAlpha = 0.6 + Math.sin(performance.now() / 130) * 0.18;
       g.strokeStyle = "#ff5577";
@@ -1795,12 +1819,18 @@
       g.lineWidth = Math.max(3, s * 0.09);
       g.setLineDash([9, 8]);
       g.beginPath();
-      if (ironRook.bossAxis === "row") {
+      if (activeBoss.bossAxis === "row") {
         g.moveTo(0, q.y);
         g.lineTo(W, q.y);
-      } else {
+      } else if (activeBoss.bossAxis === "column") {
         g.moveTo(q.x, 0);
         g.lineTo(q.x, H);
+      } else if (activeBoss.bossAxis === "diagDown") {
+        g.moveTo(q.x - span, q.y - span);
+        g.lineTo(q.x + span, q.y + span);
+      } else {
+        g.moveTo(q.x - span, q.y + span);
+        g.lineTo(q.x + span, q.y - span);
       }
       g.stroke();
       g.restore();
@@ -1975,7 +2005,7 @@
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.items.forEach(fieldItem);
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase));
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
@@ -2122,16 +2152,16 @@
     ui.devSpeed.textContent = "[4] ×" + S.devSpeed + " SPEED";
     ui.hint.textContent = "DEV: 게임 속도 ×" + S.devSpeed;
   }
-  function devBoss() {
-    if (!S.running || ["upgrade", "dead", "devpick"].includes(S.phase)) return;
+  function devBoss(kind = "rook") {
+    if (!S.running || ["upgrade", "dead"].includes(S.phase)) return;
     if (boss()) {
-      ui.hint.textContent = "DEV: 이미 IRON ROOK가 보드에 있습니다.";
+      ui.hint.textContent = "DEV: 이미 보스 몬스터가 보드에 있습니다.";
       return;
     }
-    spawnRookBoss();
+    spawnBoss(kind);
     moves();
     hud();
-    ui.hint.textContent = "DEV: IRON ROOK를 소환했습니다.";
+    ui.hint.textContent = "DEV: " + BOSS_TYPES[kind].name + "를 소환했습니다.";
   }
   function autoMove() {
     if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
@@ -2151,10 +2181,8 @@
             toward(e, landing).x === landing.x &&
             toward(e, landing).y === landing.y,
         ).length,
-        ironRook = boss(),
-        rookStrike =
-          ironRook?.bossPhase === "telegraph" &&
-          (ironRook.bossAxis === "row" ? landing.y === ironRook.y : landing.x === ironRook.x),
+        activeBoss = boss(),
+        bossStrike = activeBoss?.bossPhase === "telegraph" && bossLineThreat(activeBoss, landing),
         durableMajor = targets.some(
           (e) => !e.boss && (e.hp || 1) > 1 && ["queen", "rook", "bishop"].includes(e.type),
         ),
@@ -2162,7 +2190,7 @@
           ? durableMajor
             ? -2400
             : 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
-          : 420 - nearest * 24 - enemyStrike * 5000 - (rookStrike ? 9000 : 0);
+          : 420 - nearest * 24 - enemyStrike * 5000 - (bossStrike ? 9000 : 0);
       if (targets.some((e) => e.boss && e.bossPhase === "vulnerable")) score += 5000;
       if (exit && !targets.length) score -= 80;
       // A little noise prevents identical boards from producing a rigid loop.
@@ -2198,8 +2226,15 @@
       options =
         kind === "piece"
           ? Object.keys(glyph).map((id) => ({ id, icon: glyph[id], name: id.toUpperCase(), desc: pieceInfo[id] }))
-          : TRAITS;
-    ui.devPickTitle.textContent = kind === "piece" ? "기물을 즉시 변경" : "특성을 즉시 추가";
+          : kind === "boss"
+            ? Object.entries(BOSS_TYPES).map(([id, data]) => ({
+                id,
+                icon: glyph[id],
+                name: data.name,
+                desc: id === "rook" ? "가로·세로 관통 예고" : id === "bishop" ? "대각선 관통 예고" : "8방향 관통 예고",
+              }))
+            : TRAITS;
+    ui.devPickTitle.textContent = kind === "piece" ? "기물을 즉시 변경" : kind === "boss" ? "소환할 보스를 선택하세요" : "특성을 즉시 추가";
     ui.devPickOptions.innerHTML = "";
     options.forEach((o) => {
       let b = document.createElement("button"),
@@ -2211,6 +2246,8 @@
         if (kind === "piece") {
           p.piece = o.id;
           ui.hint.textContent = "DEV: " + o.id.toUpperCase() + "로 변경했습니다.";
+        } else if (kind === "boss") {
+          devBoss(o.id);
         } else {
           p.traits.push(o.id);
           ui.hint.textContent = "DEV: " + o.name + " 특성을 추가했습니다.";
@@ -2268,7 +2305,7 @@
   $("#devSpeed").addEventListener("click", devSpeed);
   $("#devPiece").addEventListener("click", () => openDevPick("piece"));
   $("#devTrait").addEventListener("click", () => openDevPick("trait"));
-  $("#devBoss").addEventListener("click", devBoss);
+  $("#devBoss").addEventListener("click", () => openDevPick("boss"));
   $("#devAuto").addEventListener("click", devAuto);
   $("#devPickClose").addEventListener("click", closeDevPick);
   document.addEventListener("keydown", (e) => {
@@ -2280,7 +2317,7 @@
     if (k === "4") devSpeed();
     if (k === "5") openDevPick("piece");
     if (k === "6") openDevPick("trait");
-    if (k === "7") devBoss();
+    if (k === "7") openDevPick("boss");
     if (k === "8") devAuto();
     if (k === "d") ui.devBar.classList.toggle("hidden");
   });
