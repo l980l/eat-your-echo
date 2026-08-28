@@ -1087,6 +1087,15 @@
   function bossAxisName(axis) {
     return axis === "row" ? "가로" : axis === "column" ? "세로" : axis === "diagDown" ? "↘ 대각선" : "↗ 대각선";
   }
+  function chooseSafeCell(e) {
+    let visible = S.moves.filter((m) => {
+        let q = pos(m.x, m.y);
+        return q.x > 40 && q.x < W - 40 && q.y > 40 && q.y < H - 40;
+      }),
+      emptyVisible = visible.filter((m) => !S.enemies.some((enemy) => enemy.x === m.x && enemy.y === m.y)),
+      candidates = emptyVisible.length ? emptyVisible : visible.length ? visible : S.moves;
+    e.safeCell = candidates[Math.floor(Math.random() * candidates.length)] || null;
+  }
   function nextBossKind() {
     return ["rook", "bloodQueen", "bishop", "checkmateBishop", "queen"][(Math.floor(S.wave / 30) - 1) % 5];
   }
@@ -1152,6 +1161,11 @@
     if (e.bossPhase === "sealed") return null;
     if (e.bossPhase === "sanctuary") {
       let safe = e.safeCell;
+      if (!safe) {
+        e.bossPhase = "vulnerable";
+        burst(e.x, e.y, "#53f0e4", 34);
+        return null;
+      }
       if (safe && S.player.x === safe.x && S.player.y === safe.y) {
         e.bossPhase = "vulnerable";
         burst(e.x, e.y, "#53f0e4", 34);
@@ -1351,8 +1365,7 @@
     ui.beat.textContent = "MOVE NOW";
     let activeBoss = boss();
     if (activeBoss?.bossPhase === "sanctuary" && !activeBoss.safeCell) {
-      let safeMoves = S.moves.filter((m) => !S.enemies.some((e) => e.x === m.x && e.y === m.y));
-      activeBoss.safeCell = safeMoves[Math.floor(Math.random() * safeMoves.length)] || S.moves[0];
+      chooseSafeCell(activeBoss);
     }
     let terrainNotice = S.terrainNotice;
     S.terrainNotice = "";
@@ -2112,14 +2125,15 @@
         bossTarget = S.enemies.some(
           (e) => e.boss && e.bossPhase === "vulnerable" && e.x === m.x && e.y === m.y,
         ),
+        safeTarget = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell?.x === m.x && activeBoss.safeCell?.y === m.y,
         active = S.phase === "player",
         a = active
           ? 0.2 + 0.19 * Math.sin(performance.now() / 100) + S.flash * 0.35
           : 0.07;
-      g.fillStyle = bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
+      g.fillStyle = safeTarget ? "rgba(83,240,228," + Math.min(0.95, a + 0.42) + ")" : bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
       g.fillRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
-      g.strokeStyle = bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
-      g.lineWidth = active ? 2 : 1;
+      g.strokeStyle = safeTarget ? "#efffff" : bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
+      g.lineWidth = safeTarget ? 4 : active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
       if (bossTarget) {
         g.save();
@@ -2130,6 +2144,17 @@
         g.textAlign = "center";
         g.textBaseline = "middle";
         g.fillText("STRIKE", q.x, q.y);
+        g.restore();
+      }
+      if (safeTarget) {
+        g.save();
+        g.fillStyle = "#efffff";
+        g.shadowColor = "#53f0e4";
+        g.shadowBlur = 16;
+        g.font = "700 " + s * 0.2 + "px monospace";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText("SAFE", q.x, q.y);
         g.restore();
       }
     });
@@ -2348,8 +2373,10 @@
     }
     spawnBoss(kind);
     moves();
+    let summonedBoss = boss();
+    if (summonedBoss?.bossPhase === "sanctuary") chooseSafeCell(summonedBoss);
     hud();
-    ui.hint.textContent = "DEV: " + BOSS_TYPES[kind].name + "를 소환했습니다.";
+    ui.hint.textContent = "DEV: " + BOSS_TYPES[kind].name + (summonedBoss?.bossPhase === "sanctuary" ? " — SAFE 칸으로 이동하세요." : "를 소환했습니다.");
   }
   function autoMove() {
     if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
