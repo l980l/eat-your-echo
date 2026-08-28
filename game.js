@@ -277,7 +277,7 @@
     {
       eyebrow: "FIELD ITEMS",
       title: "아이템은 필드에 따로 나타납니다",
-      copy: "아이템은 적을 잡은 자리에 떨어지지 않아요. 적들이 움직인 뒤, 보드의 빈 칸에 가끔 나타납니다. 한 번에 하나만 남아 있고 14턴 동안 먹지 않으면 사라집니다.",
+      copy: "아이템은 적을 잡은 자리에 떨어지지 않아요. 적들이 움직인 뒤, 보드의 빈 칸에 가끔 나타납니다. 보드 위에는 동시에 2개 이상의 아이템이 있을 수 없고, 14턴 동안 먹지 않으면 사라집니다.",
       visual: '<div class="tutorial-item" style="color:#8eeaff">✦ AEGIS</div><div class="tutorial-item" style="color:#7dffb2">↔ STRIDE</div><div class="tutorial-item" style="color:#ffd166">▣ CHEST</div>',
     },
     {
