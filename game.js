@@ -305,7 +305,7 @@
     {
       eyebrow: "BOSS MONSTER",
       title: "보스 몬스터",
-      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. BLOOD QUEEN은 일반 적 4기를 처치해야 열리고, CHECKMATE BISHOP은 청록 SAFE 칸에 도착해야 합니다. 공격 뒤에도 내 턴이 이어집니다.",
+      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. BLOOD QUEEN은 일반 적 4기를 처치해야 열리고, CHECKMATE BISHOP은 청록 SAFE 구역으로 이동해야 합니다. 공격 뒤에도 내 턴이 이어집니다.",
       visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♛</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♛</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
     },
     {
@@ -1087,14 +1087,14 @@
   function bossAxisName(axis) {
     return axis === "row" ? "가로" : axis === "column" ? "세로" : axis === "diagDown" ? "↘ 대각선" : "↗ 대각선";
   }
-  function chooseSafeCell(e) {
+  function chooseSafeCells(e) {
     let visible = S.moves.filter((m) => {
         let q = pos(m.x, m.y);
         return q.x > 40 && q.x < W - 40 && q.y > 40 && q.y < H - 40;
       }),
       emptyVisible = visible.filter((m) => !S.enemies.some((enemy) => enemy.x === m.x && enemy.y === m.y)),
       candidates = emptyVisible.length ? emptyVisible : visible.length ? visible : S.moves;
-    e.safeCell = candidates[Math.floor(Math.random() * candidates.length)] || null;
+    e.safeCells = [...candidates].sort(() => Math.random() - 0.5).slice(0, Math.max(1, Math.ceil(candidates.length / 2)));
   }
   function nextBossKind() {
     return ["rook", "bloodQueen", "bishop", "checkmateBishop", "queen"][(Math.floor(S.wave / 30) - 1) % 5];
@@ -1149,7 +1149,7 @@
       bossAxis: data.axes[Math.floor(Math.random() * data.axes.length)],
       gimmick: data.gimmick || "",
       seals: data.seals || 0,
-      safeCell: null,
+      safeCells: [],
       enraged: false,
       rageAxis: null,
     });
@@ -1160,13 +1160,13 @@
     if (!e) return null;
     if (e.bossPhase === "sealed") return null;
     if (e.bossPhase === "sanctuary") {
-      let safe = e.safeCell;
-      if (!safe) {
+      let safe = e.safeCells || [];
+      if (!safe.length) {
         e.bossPhase = "vulnerable";
         burst(e.x, e.y, "#53f0e4", 34);
         return null;
       }
-      if (safe && S.player.x === safe.x && S.player.y === safe.y) {
+      if (safe.some((cell) => S.player.x === cell.x && S.player.y === cell.y)) {
         e.bossPhase = "vulnerable";
         burst(e.x, e.y, "#53f0e4", 34);
         return null;
@@ -1185,7 +1185,7 @@
     e.bossPhase = "telegraph";
     if (e.gimmick === "sanctuary") {
       e.bossPhase = "sanctuary";
-      e.safeCell = null;
+      e.safeCells = [];
       return null;
     }
     let axes = BOSS_TYPES[e.bossType || e.type].axes;
@@ -1285,7 +1285,7 @@
       ui.phase.textContent = "CHECKMATE";
       ui.beat.textContent = bossStrike.sanctuary ? "JUDGEMENT" : "BOSS STRIKE";
       ui.hint.textContent = bossStrike.sanctuary
-        ? e.bossName + "의 SAFE 칸에 도착하지 못했습니다."
+        ? e.bossName + "의 SAFE 구역에 도착하지 못했습니다."
         : e.bossName + "의 예고선을 피하지 못했습니다.";
       return;
     }
@@ -1364,8 +1364,8 @@
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
     let activeBoss = boss();
-    if (activeBoss?.bossPhase === "sanctuary" && !activeBoss.safeCell) {
-      chooseSafeCell(activeBoss);
+    if (activeBoss?.bossPhase === "sanctuary" && !activeBoss.safeCells?.length) {
+      chooseSafeCells(activeBoss);
     }
     let terrainNotice = S.terrainNotice;
     S.terrainNotice = "";
@@ -1374,7 +1374,7 @@
       : activeBoss?.bossPhase === "sealed"
         ? activeBoss.bossName + " 봉인 " + activeBoss.seals + "/4 — 일반 적을 처치해 봉인을 푸세요."
         : activeBoss?.bossPhase === "sanctuary"
-          ? activeBoss.bossName + "의 심판 — 청록 SAFE 칸으로 이동해야 살아남습니다."
+          ? activeBoss.bossName + "의 심판 — 청록 이중 사각형 SAFE 구역으로 이동해야 살아남습니다."
       : activeBoss?.bossPhase === "telegraph"
         ? activeBoss.bossName + (activeBoss.enraged ? " RAGE — 붉은·주황 두 예고선 밖으로 이동하세요." : "의 " + bossAxisName(activeBoss.bossAxis) + " 줄 예고 — 붉은 선 밖으로 이동하세요.")
         : activeBoss?.bossPhase === "vulnerable"
@@ -1790,9 +1790,9 @@
       g.shadowBlur = 17;
       g.lineWidth = 2.5;
       g.globalAlpha = pulse;
-      g.beginPath();
-      g.arc(0, 0, s * 0.29, 0, Math.PI * 2);
-      g.stroke();
+      g.fillStyle = "#241e0f";
+      g.fillRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
+      g.strokeRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
       g.fillStyle = "#fff0a8";
       g.font = "700 " + s * 0.31 + "px monospace";
       g.textAlign = "center";
@@ -1975,26 +1975,6 @@
       });
       g.restore();
     }
-    if (activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell) {
-      let q = pos(activeBoss.safeCell.x, activeBoss.safeCell.y);
-      g.save();
-      g.globalAlpha = 0.7 + Math.sin(performance.now() / 120) * 0.2;
-      g.strokeStyle = "#53f0e4";
-      g.fillStyle = "rgba(83,240,228,.2)";
-      g.shadowColor = "#53f0e4";
-      g.shadowBlur = 24;
-      g.lineWidth = Math.max(3, s * 0.08);
-      g.beginPath();
-      g.arc(q.x, q.y, s * 0.42, 0, Math.PI * 2);
-      g.fill();
-      g.stroke();
-      g.fillStyle = "#efffff";
-      g.font = "700 " + s * 0.15 + "px monospace";
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText("SAFE", q.x, q.y);
-      g.restore();
-    }
     if (S.enemyTrail.length) {
       g.save();
       g.globalAlpha = 0.52;
@@ -2125,15 +2105,15 @@
         bossTarget = S.enemies.some(
           (e) => e.boss && e.bossPhase === "vulnerable" && e.x === m.x && e.y === m.y,
         ),
-        safeTarget = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell?.x === m.x && activeBoss.safeCell?.y === m.y,
+        safeTarget = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCells?.some((cell) => cell.x === m.x && cell.y === m.y),
         active = S.phase === "player",
         a = active
           ? 0.2 + 0.19 * Math.sin(performance.now() / 100) + S.flash * 0.35
           : 0.07;
-      g.fillStyle = safeTarget ? "rgba(83,240,228," + Math.min(0.95, a + 0.42) + ")" : bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
+      g.fillStyle = safeTarget ? "rgba(83,240,228," + Math.min(0.76, a + 0.24) + ")" : bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
       g.fillRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
-      g.strokeStyle = safeTarget ? "#efffff" : bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
-      g.lineWidth = safeTarget ? 4 : active ? 2 : 1;
+      g.strokeStyle = safeTarget ? "#7ff8ef" : bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
+      g.lineWidth = safeTarget ? 3 : active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
       if (bossTarget) {
         g.save();
@@ -2148,13 +2128,11 @@
       }
       if (safeTarget) {
         g.save();
-        g.fillStyle = "#efffff";
+        g.strokeStyle = "#efffff";
         g.shadowColor = "#53f0e4";
-        g.shadowBlur = 16;
-        g.font = "700 " + s * 0.2 + "px monospace";
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.fillText("SAFE", q.x, q.y);
+        g.shadowBlur = 12;
+        g.lineWidth = 1.5;
+        g.strokeRect(q.x - s * 0.19, q.y - s * 0.19, s * 0.38, s * 0.38);
         g.restore();
       }
     });
@@ -2374,9 +2352,9 @@
     spawnBoss(kind);
     moves();
     let summonedBoss = boss();
-    if (summonedBoss?.bossPhase === "sanctuary") chooseSafeCell(summonedBoss);
+    if (summonedBoss?.bossPhase === "sanctuary") chooseSafeCells(summonedBoss);
     hud();
-    ui.hint.textContent = "DEV: " + BOSS_TYPES[kind].name + (summonedBoss?.bossPhase === "sanctuary" ? " — SAFE 칸으로 이동하세요." : "를 소환했습니다.");
+    ui.hint.textContent = "DEV: " + BOSS_TYPES[kind].name + (summonedBoss?.bossPhase === "sanctuary" ? " — SAFE 구역으로 이동하세요." : "를 소환했습니다.");
   }
   function autoMove() {
     if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
@@ -2398,7 +2376,7 @@
         ).length,
         activeBoss = boss(),
         bossStrike = activeBoss?.bossPhase === "telegraph" && bossLineThreat(activeBoss, landing),
-        sanctuarySafe = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell && landing.x === activeBoss.safeCell.x && landing.y === activeBoss.safeCell.y,
+        sanctuarySafe = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCells?.some((cell) => landing.x === cell.x && landing.y === cell.y),
         sanctuaryFail = activeBoss?.bossPhase === "sanctuary" && !sanctuarySafe,
         durableMajor = targets.some(
           (e) => !e.boss && (e.hp || 1) > 1 && ["queen", "rook", "bishop"].includes(e.type),
@@ -2448,7 +2426,7 @@
                 id,
                 icon: glyph[data.piece || id],
                 name: data.name,
-                desc: id === "rook" ? "가로·세로 관통 예고" : id === "bishop" ? "대각선 관통 예고" : id === "queen" ? "8방향 관통 예고" : id === "bloodQueen" ? "잡몹 4기 처치로 봉인 해제" : "SAFE 칸 도달로 생존",
+                desc: id === "rook" ? "가로·세로 관통 예고" : id === "bishop" ? "대각선 관통 예고" : id === "queen" ? "8방향 관통 예고" : id === "bloodQueen" ? "잡몹 4기 처치로 봉인 해제" : "SAFE 구역 도달로 생존",
               }))
             : TRAITS;
     ui.devPickTitle.textContent = kind === "piece" ? "기물을 즉시 변경" : kind === "boss" ? "소환할 보스를 선택하세요" : "특성을 즉시 추가";
