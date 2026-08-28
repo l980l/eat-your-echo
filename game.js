@@ -295,8 +295,8 @@
     {
       eyebrow: "RISING TERRAIN",
       title: "웨이브가 오르면 보드도 바뀝니다",
-      copy: "벽은 통과할 수 없고 장거리 이동도 막습니다. 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
-      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>플레이어·적 모두 통과 불가</span></div><div class="tutorial-entry" style="color:#ffd166"><b>+1 AMPLIFIER</b><span>이 칸에서 출발하면 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
+      copy: "벽은 장벽 형태로 나타나며 통과할 수 없고 장거리 이동도 막습니다. 2×2 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#ffd166"><b>+1 AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
     },
   ];
   let tutorialPage = 0,
@@ -899,20 +899,46 @@
       S.terrainNotice = "새 지형: 웜홀 — 같은 색의 출구로 이동합니다.";
       return true;
     }
-    let spot = terrainSpot(4);
-    if (!spot) return false;
-    S.terrain.push({ ...spot, type });
+    let patterns =
+        type === "wall"
+          ? [
+              [[0, 0], [1, 0], [2, 0]],
+              [[0, 0], [0, 1], [0, 2]],
+              [[0, 0], [1, 0], [0, 1]],
+            ]
+          : [[[0, 0], [1, 0], [0, 1], [1, 1]]],
+      pattern = patterns[Math.floor(Math.random() * patterns.length)],
+      cells = null;
+    for (let i = 0; i < 28; i++) {
+      let spot = terrainSpot(5);
+      if (!spot) break;
+      let candidate = pattern.map(([x, y]) => ({ x: spot.x + x, y: spot.y + y }));
+      if (
+        candidate.every(
+          (cell) =>
+            Math.max(Math.abs(cell.x - S.player.x), Math.abs(cell.y - S.player.y)) >= 3 &&
+            !terrainAt(cell.x, cell.y) &&
+            !S.items.some((item) => item.x === cell.x && item.y === cell.y) &&
+            !S.enemies.some((e) => e.x === cell.x && e.y === cell.y),
+        )
+      ) {
+        cells = candidate;
+        break;
+      }
+    }
+    if (!cells) return false;
+    S.terrain.push(...cells.map((cell) => ({ ...cell, type })));
     let amplifier = type === "amplifier";
-    burst(spot.x, spot.y, amplifier ? "#ffd166" : "#6d718d", 18);
+    cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#ffd166" : "#6d718d", 10));
     S.terrainNotice = amplifier
-      ? "새 지형: 증폭 지대 — 이 칸에서 출발하면 사거리가 +1입니다."
-      : "새 지형: 벽 — 통과할 수 없고, 장거리 이동도 막습니다.";
+      ? "새 지형: 증폭 지대 — 2×2 구역에서 출발하면 사거리가 +1입니다."
+      : "새 지형: 벽 — 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
     return true;
   }
   function spawnTerrainByWave() {
     let count = (type) => S.terrain.filter((t) => t.type === type).length;
-    if (S.wave >= 12 && S.wave % 12 === 0 && count("wall") < 7) addTerrain("wall");
-    if (S.wave >= 24 && (S.wave - 24) % 18 === 0 && count("amplifier") < 5) addTerrain("amplifier");
+    if (S.wave >= 12 && S.wave % 12 === 0 && count("wall") < 9) addTerrain("wall");
+    if (S.wave >= 24 && (S.wave - 24) % 18 === 0 && count("amplifier") < 8) addTerrain("amplifier");
     if (S.wave >= 60 && (S.wave - 60) % 30 === 0 && count("wormhole") < 6) addTerrain("wormhole");
   }
   function collectItemsAt(x, y, combo, hitSet) {
