@@ -23,6 +23,7 @@
       resultRank: $("#resultRank"),
       devBar: $("#devBar"),
       devToggle: $("#devToggle"),
+      preToggle: $("#preToggle"),
       devPassword: $("#devPasswordScreen"),
       devPasswordInput: $("#devPasswordInput"),
       devPasswordStatus: $("#devPasswordStatus"),
@@ -85,9 +86,21 @@
       queen: "♛",
       king: "♚",
     },
+    // PRE MODE uses these data SVGs directly in the canvas. They do not add
+    // a server request, and decoded images are cached per piece/color pair.
+    preSvgShapes = {
+      pawn: '<circle cx="80" cy="55" r="40"/><path d="M55 104h50l22 96H33z"/><path d="M25 214h110l18 35H7z"/><path d="M0 249h160v32H0z"/>',
+      knight: '<path d="M52 18c60-20 112 20 105 83-3 29-18 50-36 68l-4 72H33l13-94C21 120 22 76 42 54c13-15 12-26 10-36z"/><path d="M67 76c20-9 43-3 55 14-21-3-35 5-49 21z" fill="#101431"/><circle cx="87" cy="61" r="7" fill="#101431"/><path d="M25 243h110l18 35H7z"/><path d="M0 278h160v32H0z"/>',
+      bishop: '<path d="M80 10c-28 29-42 52-42 75 0 21 11 39 29 49l-19 87h64l-19-87c18-10 29-28 29-49 0-23-14-46-42-75z"/><path d="M60 107l40-43" fill="none" stroke="#101431" stroke-width="13"/><path d="M25 221h110l18 35H7z"/><path d="M0 256h160v32H0z"/>',
+      rook: '<path d="M25 18h25v22h20V18h20v22h20V18h25v72l-17 28v97H42v-97L25 90z"/><path d="M30 215h100l18 35H12z"/><path d="M0 250h160v32H0z"/>',
+      queen: '<circle cx="22" cy="29" r="16"/><circle cx="55" cy="13" r="16"/><circle cx="88" cy="29" r="16"/><circle cx="121" cy="13" r="16"/><circle cx="154" cy="29" r="16"/><path d="M22 50l20 86h92l20-86-33 31-33-39-33 39z"/><path d="M45 136h86l14 79H31l14-79z"/><path d="M27 215h122l18 35H9z"/><path d="M0 250h176v32H0z"/>',
+      king: '<path d="M69 0h22v27h27v22H91v27H69V49H42V27h27z"/><path d="M42 93c0-27 17-45 38-45s38 18 38 45c0 17-8 30-20 37l11 83H51l11-83c-12-7-20-20-20-37z"/><path d="M25 213h110l18 35H7z"/><path d="M0 248h160v32H0z"/>',
+    },
+    preSvgImages = new Map(),
     S = {
       running: false,
       dev: false,
+      pre: false,
       devSpeed: 1,
       autoPlay: false,
       autoElapsed: 0,
@@ -126,7 +139,8 @@
     D = 1,
     last = 0;
   const DEV_PASSWORD_HASH = "c4876de490dcf38b74d6c0d4f120cf01126c3d6a3a49b93ec81caae38ea1497e";
-  let devUnlocked = sessionStorage.getItem("its-my-turn-dev-unlocked") === "1";
+  let devUnlocked = sessionStorage.getItem("its-my-turn-dev-unlocked") === "1",
+    passwordTarget = "dev";
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
     COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
@@ -337,6 +351,7 @@
   function beginRun() {
     reset();
     S.dev = ui.devToggle.checked && devUnlocked;
+    S.pre = ui.preToggle.checked && devUnlocked;
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
     startBgm();
@@ -1834,6 +1849,24 @@
     }
     g.restore();
   }
+  function drawPrePiece(type, x, y, scale, color) {
+    let key = type + color,
+      image = preSvgImages.get(key);
+    if (!image) {
+      image = new Image();
+      let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 310"><defs><linearGradient id="p" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="' + color + '"/><stop offset="1" stop-color="' + color + '"/></linearGradient></defs><g fill="url(#p)" stroke="#e9ffff" stroke-width="4" stroke-linejoin="round">' + (preSvgShapes[type] || preSvgShapes.pawn) + '</g></svg>';
+      image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      preSvgImages.set(key, image);
+    }
+    if (image.complete && image.naturalWidth) {
+      let width = scale,
+        height = scale * 1.76;
+      g.drawImage(image, x - width / 2, y - height * 0.54, width, height);
+    } else {
+      g.font = "700 " + scale * 0.72 + "px Georgia, serif";
+      g.fillText(glyph[type] || glyph.pawn, x, y);
+    }
+  }
   function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "", seals = 0, enraged = false) {
     let q = pos(x, y),
       s = size(),
@@ -1847,10 +1880,13 @@
     g.shadowColor = col;
     g.globalAlpha = enemy ? 0.68 + health * 0.32 : 1;
     g.fillStyle = enemy ? col : "#f1ffff";
-    g.font = "700 " + s * (bossPiece ? 0.94 : 0.62) + "px Georgia, 'Times New Roman', serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
+    if (S.pre) drawPrePiece(t, q.x, q.y, s * (bossPiece ? 1.12 : 0.86), enemy ? col : "#53f0e4");
+    else {
+      g.font = "700 " + s * (bossPiece ? 0.94 : 0.62) + "px Georgia, 'Times New Roman', serif";
+      g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
+    }
     if (enemy && risk) {
       g.fillStyle = "#f45cf4";
       g.shadowColor = "#f45cf4";
@@ -2224,10 +2260,13 @@
       g.save();
       g.globalAlpha = 1 - t;
       g.fillStyle = "#f5efff";
-      g.font = "700 " + s * 0.45 + "px 'Gowun Batang', serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText(glyph[S.player.piece], q.x, q.y);
+      if (S.pre) drawPrePiece(S.player.piece, q.x, q.y, s * 0.86, "#f1ffff");
+      else {
+        g.font = "700 " + s * 0.45 + "px 'Gowun Batang', serif";
+        g.fillText(glyph[S.player.piece], q.x, q.y);
+      }
       g.globalAlpha = 1;
       g.strokeStyle = "#ff315d";
       g.lineWidth = 5 * (1 - t) + 1;
@@ -2476,7 +2515,8 @@
     });
     ui.devPick.classList.remove("hidden");
   }
-  function openDevPassword() {
+  function openDevPassword(target = "dev") {
+    passwordTarget = target;
     ui.devPasswordInput.value = "";
     ui.devPasswordStatus.textContent = "";
     ui.devPassword.classList.remove("hidden");
@@ -2503,7 +2543,8 @@
       }
       devUnlocked = true;
       sessionStorage.setItem("its-my-turn-dev-unlocked", "1");
-      ui.devToggle.checked = true;
+      if (passwordTarget === "pre") ui.preToggle.checked = true;
+      else ui.devToggle.checked = true;
       closeDevPassword();
     } catch (_) {
       ui.devPasswordStatus.textContent = "인증을 처리할 수 없습니다. 다시 시도하세요.";
@@ -2550,7 +2591,13 @@
   ui.devToggle.addEventListener("change", () => {
     if (ui.devToggle.checked && !devUnlocked) {
       ui.devToggle.checked = false;
-      openDevPassword();
+      openDevPassword("dev");
+    }
+  });
+  ui.preToggle.addEventListener("change", () => {
+    if (ui.preToggle.checked && !devUnlocked) {
+      ui.preToggle.checked = false;
+      openDevPassword("pre");
     }
   });
   ui.devPasswordSubmit.addEventListener("click", unlockDevPassword);

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-labelledby="title desc">
+  <title id="title">It's My Turn — chess piece icon study</title>
+  <desc id="desc">Six neon chess piece SVG icons: pawn, knight, bishop, rook, queen and king.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08091d"/><stop offset="1" stop-color="#161238"/></linearGradient>
+    <linearGradient id="piece" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#f8ffff"/><stop offset=".45" stop-color="#72fff4"/><stop offset="1" stop-color="#34b8d1"/></linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .card{fill:#111430;stroke:#3a4972;stroke-width:3}.piece{fill:url(#piece);stroke:#d9ffff;stroke-width:4;stroke-linejoin:round;filter:url(#glow)}.label{fill:#e45cf4;font:600 27px monospace;letter-spacing:5px;text-anchor:middle}.sub{fill:#a8b5d5;font:20px sans-serif;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1600" height="760" fill="url(#bg)"/>
+  <text x="800" y="82" fill="#54f6eb" font-family="monospace" font-size="29" letter-spacing="9" text-anchor="middle">IT'S MY TURN — PIECE ICON STUDY</text>
+  <g transform="translate(70 150)">
+    <g transform="translate(0 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(30 72)"><circle cx="80" cy="61" r="43"/><path d="M55 112h50l22 100H33z"/><path d="M26 220h108l18 38H8z"/><path d="M0 258h160v35H0z"/></g><text class="label" x="110" y="375">PAWN</text><text class="sub" x="110" y="414">clean · readable</text></g>
+    <g transform="translate(268 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(20 55)"><path d="M52 20c60-20 112 20 105 83-3 29-18 50-36 68l-4 74H33l13-96C21 122 22 77 42 55c13-15 12-26 10-35z"/><path d="M67 77c20-9 43-3 55 14-21-3-35 5-49 21z" fill="#101431" stroke="#d9ffff"/><circle cx="87" cy="62" r="7" fill="#101431"/><path d="M25 245h110l18 38H7z"/><path d="M0 283h160v35H0z"/></g><text class="label" x="110" y="375">KNIGHT</text><text class="sub" x="110" y="414">sharp silhouette</text></g>
+    <g transform="translate(536 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(30 55)"><path d="M80 11c-28 29-42 52-42 75 0 21 11 39 29 49l-19 89h64l-19-89c18-10 29-28 29-49 0-23-14-46-42-75z"/><path d="M60 108l40-43" fill="none" stroke="#101431" stroke-width="13"/><path d="M25 224h110l18 38H7z"/><path d="M0 262h160v35H0z"/></g><text class="label" x="110" y="375">BISHOP</text><text class="sub" x="110" y="414">diagonal cut</text></g>
+    <g transform="translate(804 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(30 55)"><path d="M25 20h25v22h20V20h20v22h20V20h25v72l-17 28v99H42v-99L25 92z"/><path d="M30 219h100l18 38H12z"/><path d="M0 257h160v35H0z"/></g><text class="label" x="110" y="375">ROOK</text><text class="sub" x="110" y="414">fortified crown</text></g>
+    <g transform="translate(1072 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(25 49)"><circle cx="22" cy="29" r="16"/><circle cx="55" cy="13" r="16"/><circle cx="88" cy="29" r="16"/><circle cx="121" cy="13" r="16"/><circle cx="154" cy="29" r="16"/><path d="M22 50l20 86h92l20-86-33 31-33-39-33 39z"/><path d="M45 136h86l14 82H31z"/><path d="M27 218h122l18 38H9z"/><path d="M0 256h176v35H0z"/></g><text class="label" x="110" y="375">QUEEN</text><text class="sub" x="110" y="414">five-point crown</text></g>
+    <g transform="translate(1340 0)"><rect class="card" width="220" height="470" rx="10"/>
+      <g class="piece" transform="translate(30 42)"><path d="M69 0h22v27h27v22H91v27H69V49H42V27h27z"/><path d="M42 93c0-27 17-45 38-45s38 18 38 45c0 17-8 30-20 37l11 88H51l11-88c-12-7-20-20-20-37z"/><path d="M25 218h110l18 38H7z"/><path d="M0 256h160v35H0z"/></g><text class="label" x="110" y="375">KING</text><text class="sub" x="110" y="414">distinct cross crown</text></g>
+  </g>
+</svg>

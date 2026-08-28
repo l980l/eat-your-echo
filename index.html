@@ -410,7 +410,8 @@
       line-height: 1.05;
       text-shadow: 2px 2px 0 #d66efd, 0 0 18px #53f0e4aa;
     }
-    #startScreen .start-dev {
+    #startScreen .start-dev,
+    #startScreen .start-pre {
       position: absolute;
       z-index: 2;
       bottom: max(18px, env(safe-area-inset-bottom));
@@ -424,6 +425,12 @@
       font-size: 9px;
       backdrop-filter: blur(3px);
     }
+    #startScreen .start-pre {
+      bottom: max(48px, calc(env(safe-area-inset-bottom) + 30px));
+      color: #53f0e4;
+      border-color: #53f0e488;
+    }
+    #startScreen .start-pre input { accent-color: #53f0e4; }
     .risk-options { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
     .risk-options button { flex: 1; min-height: 106px; margin: 0; padding: 15px; background: #211229; color: #ffe9f7; border-color: #f45cf4; }
     .risk-options button:first-child { background: #f45cf4; color: #16081a; border-color: #ffd166; box-shadow: 0 0 26px #f45cf477; }
@@ -602,9 +609,11 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.66</b> · 2026.08.28</p>
+        <p class="build-version">BUILD <b>v0.10.67</b> · 2026.08.28</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
+        ><label class="dev-toggle start-pre"
+          ><input id="preToggle" type="checkbox" />PRE MODE · SVG PIECES</label
         ><nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
           <button class="start-button" id="startButton">PLAY</button>
@@ -713,6 +722,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.66"></script>
+    <script src="game.js?v=v0.10.67"></script>
   </body>
 </html>
