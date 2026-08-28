@@ -2162,16 +2162,10 @@
       g.fillStyle = color;
       g.shadowColor = color;
       g.shadowBlur = target.danger ? 24 : 14;
-      g.lineWidth = e.boss ? 3 : 2;
-      g.lineCap = "round";
       g.beginPath();
-      g.moveTo(-38, 0);
-      g.lineTo(20, 0);
-      g.stroke();
-      g.beginPath();
-      g.moveTo(27, 0);
-      g.lineTo(14, -7);
-      g.lineTo(14, 7);
+      g.moveTo(20, 0);
+      g.lineTo(10, -5);
+      g.lineTo(10, 5);
       g.closePath();
       g.fill();
       g.restore();
@@ -2183,17 +2177,17 @@
       g.shadowBlur = target.danger ? 22 : 12;
       g.lineWidth = e.boss ? 3 : 2;
       g.beginPath();
-      g.arc(target.x, target.y, e.boss ? 15 : 12, 0, Math.PI * 2);
+      g.arc(target.x, target.y, e.boss ? 12 : 9, 0, Math.PI * 2);
       g.fill();
       g.stroke();
       g.fillStyle = color;
-      g.font = "700 " + (e.boss ? 21 : 16) + "px Georgia, serif";
+      g.font = "700 " + (e.boss ? 17 : 13) + "px Georgia, serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText(icon, target.x, target.y + 1);
       if (e.boss || target.danger) {
-        g.font = "700 8px monospace";
-        g.fillText(target.danger ? "CHECK!" : "BOSS", target.x, target.y - (e.boss ? 24 : 20));
+        g.font = "700 7px monospace";
+        g.fillText(target.danger ? "CHECK!" : "BOSS", target.x, target.y - (e.boss ? 20 : 16));
       }
       g.restore();
     });
