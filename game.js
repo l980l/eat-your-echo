@@ -1257,15 +1257,19 @@
     let bossStrike = advanceBoss();
     if (bossStrike && !invulnerable) {
       let e = bossStrike.boss;
-      e.x = S.player.x;
-      e.y = S.player.y;
-      S.enemyTrail.push({ x1: bossStrike.from.x, y1: bossStrike.from.y, x2: e.x, y2: e.y });
-      burst(e.x, e.y, "#ff5577", 36);
+      if (!bossStrike.sanctuary) {
+        e.x = S.player.x;
+        e.y = S.player.y;
+        S.enemyTrail.push({ x1: bossStrike.from.x, y1: bossStrike.from.y, x2: e.x, y2: e.y });
+        burst(e.x, e.y, "#ff5577", 36);
+      } else {
+        burst(S.player.x, S.player.y, "#ff5577", 48);
+      }
       S.phase = "captured";
       S.captureTimer = 0.34;
       S.flash = 0;
       ui.phase.textContent = "CHECKMATE";
-      ui.beat.textContent = "BOSS STRIKE";
+      ui.beat.textContent = bossStrike.sanctuary ? "JUDGEMENT" : "BOSS STRIKE";
       ui.hint.textContent = bossStrike.sanctuary
         ? e.bossName + "의 SAFE 칸에 도착하지 못했습니다."
         : e.bossName + "의 예고선을 피하지 못했습니다.";
