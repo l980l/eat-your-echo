@@ -1450,18 +1450,18 @@
       S.upgradeMode = "piece";
       S.upgradeOptions = [piece];
       ui.upgradeEyebrow.textContent = "DESTINY PROMOTION";
-      ui.upgradeTitle.textContent = "운명의 기물을 받습니다";
+      ui.upgradeTitle.textContent = "새 말로 승급합니다";
       renderChoices();
     } else if (reroll) {
       S.upgradeMode = "fork";
       S.upgradeOptions = [
-        { kind: "piece", icon: "♛", name: "REFORGE", desc: "다른 기물 하나를 무작위로 변경" },
+        { kind: "piece", icon: "♛", name: "말 바꾸기", desc: "현재 말이 무작위 기물로 바뀝니다" },
         ...(TRAITS.some((t) => !p.traits.includes(t.id))
-          ? [{ kind: "trait", icon: "✦", name: "AUGMENT", desc: "무작위 특성 3개 중 하나를 선택" }]
+          ? [{ kind: "trait", icon: "✦", name: "특성 고르기", desc: "무작위 특성 3개 중 하나를 고릅니다" }]
           : []),
       ];
       ui.upgradeEyebrow.textContent = "MILESTONE · LEVEL " + (p.rank + 1);
-      ui.upgradeTitle.textContent = "기물 변경 또는 특성 뽑기";
+      ui.upgradeTitle.textContent = "이번에는 무엇을 고를까요?";
       renderChoices();
     } else {
       let pool = TRAITS.filter((t) => !p.traits.includes(t.id));
@@ -1517,8 +1517,8 @@
         let pool = ["knight", "bishop", "rook", "queen", "king"].filter((piece) => piece !== p.piece);
         S.upgradeMode = "piece";
         S.upgradeOptions = [pool[Math.floor(Math.random() * pool.length)]];
-        ui.upgradeEyebrow.textContent = "FATED REFORGE · LEVEL " + (p.rank + 1);
-        ui.upgradeTitle.textContent = "기물이 다시 태어납니다";
+        ui.upgradeEyebrow.textContent = "RANDOM PIECE · LEVEL " + (p.rank + 1);
+        ui.upgradeTitle.textContent = "새 말이 정해졌습니다";
       } else {
         let pool = TRAITS.filter((t) => !p.traits.includes(t.id));
         S.upgradeMode = "trait";
