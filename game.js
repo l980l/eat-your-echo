@@ -971,8 +971,8 @@
     e.bossAxis = Math.random() < 0.5 ? "row" : "column";
     return null;
   }
-  function toward(e) {
-    let p = S.player,
+  function toward(e, target = S.player) {
+    let p = target,
       occupied = new Set(
         S.enemies.filter((o) => o !== e).map((o) => K(o.x, o.y)),
       ),
@@ -1941,9 +1941,23 @@
     if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
     let candidates = S.moves.map((m) => {
       let target = S.enemies.find((e) => e.x === m.x && e.y === m.y),
-        nearest = Math.min(...S.enemies.map((e) => Math.abs(e.x - m.x) + Math.abs(e.y - m.y)), 99),
-        score = target ? 600 - (target.hp || 1) * 5 : -nearest * 8;
-      if (target?.boss && target.bossPhase === "vulnerable") score += 2000;
+        remaining = S.enemies.filter((e) => e !== target || (e.hp || 1) > 1),
+        nearest = Math.min(...remaining.map((e) => Math.abs(e.x - m.x) + Math.abs(e.y - m.y)), 99),
+        enemyStrike = remaining.filter(
+          (e) =>
+            !e.boss &&
+            toward(e, m).x === m.x &&
+            toward(e, m).y === m.y,
+        ).length,
+        ironRook = boss(),
+        rookStrike =
+          ironRook?.bossPhase === "telegraph" &&
+          (ironRook.bossAxis === "row" ? m.y === ironRook.y : m.x === ironRook.x),
+        score = target
+          ? 1800 - (target.hp || 1) * 35
+          : 420 - nearest * 24 - enemyStrike * 5000 - (rookStrike ? 9000 : 0);
+      if (target?.boss && target.bossPhase === "vulnerable") score += 5000;
+      // A little noise prevents identical boards from producing a rigid loop.
       return { m, score: score + Math.random() * 12 };
     });
     candidates.sort((a, b) => b.score - a.score);
