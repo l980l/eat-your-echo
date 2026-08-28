@@ -136,6 +136,9 @@
       effects: [],
       trail: [],
       enemyTrail: [],
+      rewindHistory: [],
+      rewind: null,
+      deathReason: "",
       upgradeOptions: [],
       upgradeMode: "",
       riskBeats: 0,
@@ -705,6 +708,9 @@
     S.effects = [];
     S.trail = [];
     S.enemyTrail = [];
+    S.rewindHistory = [];
+    S.rewind = null;
+    S.deathReason = "";
     S.upgradeOptions = [];
     S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false, slipCooldown: 0 };
     S.enemies = [
@@ -713,6 +719,20 @@
     ];
     moves();
     hud();
+  }
+  function rememberRewind(label) {
+    if (!S.running || ["dead", "rewind"].includes(S.phase)) return;
+    let snapshot = {
+      label,
+      wave: S.wave,
+      score: S.score,
+      player: { ...S.player, traits: [...S.player.traits] },
+      enemies: S.enemies.map((enemy) => ({ ...enemy, face: enemy.face && { ...enemy.face }, safeCells: enemy.safeCells?.map((cell) => ({ ...cell })) })),
+      items: S.items.map((item) => ({ ...item })),
+      terrain: S.terrain.map((tile) => ({ ...tile })),
+    };
+    S.rewindHistory.push(snapshot);
+    if (S.rewindHistory.length > 5) S.rewindHistory.shift();
   }
   function hud() {
     ui.hp.textContent = S.wave;
@@ -1335,6 +1355,7 @@
     );
   }
   function enemyBeat() {
+    rememberRewind("ENEMY TURN");
     S.wave++;
     let invulnerable = S.invincibleBeats > 0;
     if (invulnerable) S.invincibleBeats--;
@@ -1369,6 +1390,7 @@
       ui.hint.textContent = bossStrike.sanctuary
         ? e.bossName + "의 SAFE 구역에 도착하지 못했습니다."
         : e.bossName + "의 예고선을 피하지 못했습니다.";
+      S.deathReason = bossStrike.sanctuary ? e.bossName + "의 심판" : e.bossName + "의 예고 공격";
       return;
     }
     if (bossStrike && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 26);
@@ -1414,6 +1436,7 @@
       ui.phase.textContent = "CHECKMATE";
       ui.beat.textContent = "CAPTURED";
       ui.hint.textContent = "적 말이 당신의 칸을 점령했습니다.";
+      S.deathReason = (killer?.type || "ENEMY").toUpperCase() + "에게 잡힘";
       return;
     }
     if (captured && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 20);
@@ -1484,6 +1507,7 @@
   }
   function playerMove(m) {
     if (S.phase !== "player") return;
+    rememberRewind("YOUR MOVE");
     let p = S.player,
       from = { x: p.x, y: p.y },
       usedRangeBoost = S.rangeBoostMoves > 0,
@@ -1799,19 +1823,31 @@
     sfx("upgrade");
   }
   function die() {
+    rememberRewind("CHECKMATE · " + (S.deathReason || "CAPTURED"));
     S.phase = "dead";
-    S.death = 1.1;
+    S.death = 0.55;
     ui.phase.textContent = "CHECKMATE";
     ui.beat.textContent = "CAPTURED";
     ui.hint.textContent = "당신의 말이 체스판에서 부서집니다.";
     deathBurst(S.player.x, S.player.y);
     sfx("death");
   }
+  function beginDeathRewind() {
+    if (!S.rewindHistory.length) {
+      over();
+      return;
+    }
+    S.phase = "rewind";
+    S.rewind = { index: S.rewindHistory.length - 1, elapsed: 0 };
+    ui.phase.textContent = "LAST 5 MOVES";
+    ui.beat.textContent = "REWIND";
+    ui.hint.textContent = "체크메이트까지의 전개를 되돌립니다.";
+  }
   function over() {
     S.running = false;
     S.finalScore = S.score;
     ui.result.textContent =
-      "적 말이 당신을 잡았습니다. " +
+      (S.deathReason ? S.deathReason + ". " : "적 말이 당신을 잡았습니다. ") +
       S.wave +
       "번의 박자 동안 SCORE " +
       S.score.toLocaleString() +
@@ -2047,7 +2083,47 @@
       return { ...target, x: Math.max(margin, Math.min(W - margin, x)), y: Math.max(margin, Math.min(H - margin, y)), angle };
     });
   }
+  function drawRewind() {
+    let replay = S.rewind,
+      snapshot = replay && S.rewindHistory[replay.index];
+    if (!snapshot) return;
+    let savedCamera = S.camera;
+    S.camera = { x: snapshot.player.x, y: snapshot.player.y };
+    g.clearRect(0, 0, W, H);
+    let s = size(),
+      cols = Math.ceil(W / s / 2) + 2,
+      rows = Math.ceil(H / s / 2) + 2,
+      cx = Math.floor(S.camera.x),
+      cy = Math.floor(S.camera.y);
+    for (let y = cy - rows; y <= cy + rows; y++)
+      for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
+    snapshot.terrain.forEach(terrainTile);
+    snapshot.items.forEach(fieldItem);
+    snapshot.enemies.forEach((enemy) => piece(enemy.x, enemy.y, enemy.type, true, enemy.hp || 1, enemy.maxHp || 1, enemy.risk, enemy.boss, enemy.bossPhase, enemy.bossName, enemy.seals, enemy.enraged));
+    piece(snapshot.player.x, snapshot.player.y, snapshot.player.piece);
+    g.save();
+    g.fillStyle = "#07091be0";
+    g.fillRect(0, 0, W, 74);
+    g.strokeStyle = "#ff5577";
+    g.globalAlpha = 0.72;
+    g.strokeRect(16, 13, W - 32, 48);
+    g.globalAlpha = 1;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = "700 12px monospace";
+    g.fillStyle = "#ff8da5";
+    g.fillText("REWIND " + (replay.index + 1) + " / " + S.rewindHistory.length, W / 2, 29);
+    g.font = "700 14px 'Gowun Batang', serif";
+    g.fillStyle = "#eff4ff";
+    g.fillText(snapshot.label, W / 2, 48);
+    g.restore();
+    S.camera = savedCamera;
+  }
   function draw() {
+    if (S.phase === "rewind") {
+      drawRewind();
+      return;
+    }
     g.clearRect(0, 0, W, H);
     let s = size(),
       cols = Math.ceil(W / s / 2) + 2,
@@ -2408,9 +2484,19 @@
         if (S.captureTimer <= 0) die();
       } else if (S.phase === "dead") {
         S.death -= dt;
-        ui.meter.style.width = Math.max(0, S.death / 1.1) * 100 + "%";
+        ui.meter.style.width = Math.max(0, S.death / 0.55) * 100 + "%";
         ui.meter.style.background = "#ff315d";
-        if (S.death <= 0) over();
+        if (S.death <= 0) beginDeathRewind();
+      } else if (S.phase === "rewind") {
+        S.rewind.elapsed += dt;
+        ui.meter.style.width = Math.max(0, (1 - S.rewind.elapsed / 0.72) * 100) + "%";
+        ui.meter.style.background = "#ff5577";
+        ui.meter.style.boxShadow = "0 0 15px #ff5577";
+        if (S.rewind.elapsed >= 0.72) {
+          S.rewind.elapsed = 0;
+          S.rewind.index--;
+          if (S.rewind.index < 0) over();
+        }
       } else if (S.phase === "upgrade" && S.autoPlay) {
         S.autoElapsed += dt;
         if (S.autoElapsed >= 0.55 && performance.now() >= (S.upgradeLock || 0)) {
