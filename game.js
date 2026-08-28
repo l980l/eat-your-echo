@@ -1068,17 +1068,45 @@
   function boss() {
     return S.enemies.find((e) => e.boss);
   }
-  function bossLineThreat(e, target = S.player) {
-    if (e.bossAxis === "row") return target.y === e.y;
-    if (e.bossAxis === "column") return target.x === e.x;
-    if (e.bossAxis === "diagDown") return target.x - e.x === target.y - e.y;
+  function axisThreat(e, axis, target = S.player) {
+    if (axis === "row") return target.y === e.y;
+    if (axis === "column") return target.x === e.x;
+    if (axis === "diagDown") return target.x - e.x === target.y - e.y;
     return target.x - e.x === -(target.y - e.y);
+  }
+  function bossLineThreat(e, target = S.player) {
+    return [e.bossAxis, e.rageAxis].filter(Boolean).some((axis) => axisThreat(e, axis, target));
   }
   function bossAxisName(axis) {
     return axis === "row" ? "가로" : axis === "column" ? "세로" : axis === "diagDown" ? "↘ 대각선" : "↗ 대각선";
   }
   function nextBossKind() {
     return ["rook", "bloodQueen", "bishop", "checkmateBishop", "queen"][(Math.floor(S.wave / 30) - 1) % 5];
+  }
+  function bossRelocate(e) {
+    let directions = e.type === "rook"
+        ? [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        : e.type === "bishop"
+          ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+          : [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
+      occupied = new Set(S.enemies.filter((other) => other !== e).map((other) => K(other.x, other.y))),
+      choices = [];
+    directions.forEach(([dx, dy]) => {
+      for (let step = 1; step <= 2; step++) {
+        let q = { x: e.x + dx * step, y: e.y + dy * step };
+        if (isWall(q.x, q.y) || occupied.has(K(q.x, q.y))) break;
+        if (dist(q, S.player) >= 3) choices.push(q);
+      }
+    });
+    if (!choices.length) return false;
+    choices.sort((a, b) => dist(a, S.player) - dist(b, S.player) || Math.random() - 0.5);
+    let from = { x: e.x, y: e.y },
+      to = choices[0];
+    e.x = to.x;
+    e.y = to.y;
+    S.enemyTrail.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, boss: true });
+    burst(to.x, to.y, e.enraged ? "#ff9f43" : "#ff5577", 18);
+    return true;
   }
   function spawnBoss(kind = nextBossKind()) {
     if (boss()) return;
@@ -1106,6 +1134,8 @@
       gimmick: data.gimmick || "",
       seals: data.seals || 0,
       safeCell: null,
+      enraged: false,
+      rageAxis: null,
     });
     burst(q.x, q.y, "#ff5577", 42);
   }
@@ -1129,6 +1159,8 @@
       burst(e.x, e.y, "#53f0e4", 28);
       return null;
     }
+    e.enraged = e.hp <= Math.ceil(e.maxHp / 2);
+    bossRelocate(e);
     e.bossPhase = "telegraph";
     if (e.gimmick === "sanctuary") {
       e.bossPhase = "sanctuary";
@@ -1137,6 +1169,7 @@
     }
     let axes = BOSS_TYPES[e.bossType || e.type].axes;
     e.bossAxis = axes[Math.floor(Math.random() * axes.length)];
+    e.rageAxis = e.enraged ? axes.filter((axis) => axis !== e.bossAxis)[Math.floor(Math.random() * Math.max(1, axes.length - 1))] : null;
     return null;
   }
   function toward(e, target = S.player) {
@@ -1319,7 +1352,7 @@
         : activeBoss?.bossPhase === "sanctuary"
           ? activeBoss.bossName + "의 심판 — 청록 SAFE 칸으로 이동해야 살아남습니다."
       : activeBoss?.bossPhase === "telegraph"
-        ? activeBoss.bossName + "의 " + bossAxisName(activeBoss.bossAxis) + " 줄 예고 — 붉은 선 밖으로 이동하세요."
+        ? activeBoss.bossName + (activeBoss.enraged ? " RAGE — 붉은·주황 두 예고선 밖으로 이동하세요." : "의 " + bossAxisName(activeBoss.bossAxis) + " 줄 예고 — 붉은 선 밖으로 이동하세요.")
         : activeBoss?.bossPhase === "vulnerable"
           ? activeBoss.bossName + " 코어 노출! 지금 보스를 밟아 피해를 주세요."
       : S.riskBeats
@@ -1760,7 +1793,7 @@
     }
     g.restore();
   }
-  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "", seals = 0) {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "", seals = 0, enraged = false) {
     let q = pos(x, y),
       s = size(),
       // The color communicates remaining hits, not the enemy's original maximum.
@@ -1808,7 +1841,7 @@
       g.fillText(bossStatus, q.x, q.y - s * 0.73);
       g.fillStyle = "#fff0f4";
       g.font = "700 " + s * 0.15 + "px monospace";
-      g.fillText((bossName || "BOSS") + " · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
+      g.fillText((bossName || "BOSS") + (enraged ? " · RAGE" : "") + " · " + hp + "/" + maxHp, q.x, q.y + s * 0.62);
     }
     g.restore();
   }
@@ -1867,21 +1900,28 @@
       g.shadowBlur = 16;
       g.lineWidth = Math.max(3, s * 0.09);
       g.setLineDash([9, 8]);
-      g.beginPath();
-      if (activeBoss.bossAxis === "row") {
-        g.moveTo(0, q.y);
-        g.lineTo(W, q.y);
-      } else if (activeBoss.bossAxis === "column") {
-        g.moveTo(q.x, 0);
-        g.lineTo(q.x, H);
-      } else if (activeBoss.bossAxis === "diagDown") {
-        g.moveTo(q.x - span, q.y - span);
-        g.lineTo(q.x + span, q.y + span);
-      } else {
-        g.moveTo(q.x - span, q.y + span);
-        g.lineTo(q.x + span, q.y - span);
-      }
-      g.stroke();
+      [activeBoss.bossAxis, activeBoss.rageAxis].filter(Boolean).forEach((axis, index) => {
+        g.globalAlpha = (0.6 + Math.sin(performance.now() / 130) * 0.18) * (index ? 0.75 : 1);
+        if (index) {
+          g.strokeStyle = "#ff9f43";
+          g.shadowColor = "#ff9f43";
+        }
+        g.beginPath();
+        if (axis === "row") {
+          g.moveTo(0, q.y);
+          g.lineTo(W, q.y);
+        } else if (axis === "column") {
+          g.moveTo(q.x, 0);
+          g.lineTo(q.x, H);
+        } else if (axis === "diagDown") {
+          g.moveTo(q.x - span, q.y - span);
+          g.lineTo(q.x + span, q.y + span);
+        } else {
+          g.moveTo(q.x - span, q.y + span);
+          g.lineTo(q.x + span, q.y - span);
+        }
+        g.stroke();
+      });
       g.restore();
     }
     if (activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell) {
@@ -2074,7 +2114,7 @@
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.items.forEach(fieldItem);
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName, e.seals));
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName, e.seals, e.enraged));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
