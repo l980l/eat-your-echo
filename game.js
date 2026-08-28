@@ -2245,10 +2245,13 @@
       g.fill();
       g.stroke();
       g.fillStyle = color;
-      g.font = "700 " + (e.boss ? 17 : 13) + "px Georgia, serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText(icon, target.x, target.y + 1);
+      if (S.pre) drawPrePiece(e.type, target.x, target.y + 1, e.boss ? 21 : 15, color);
+      else {
+        g.font = "700 " + (e.boss ? 17 : 13) + "px Georgia, serif";
+        g.fillText(icon, target.x, target.y + 1);
+      }
       if (e.boss || target.danger) {
         g.font = "700 7px monospace";
         g.fillText(target.danger ? "CHECK!" : "BOSS", target.x, target.y - (e.boss ? 20 : 16));
