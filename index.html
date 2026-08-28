@@ -420,12 +420,19 @@
       line-height: 1.05;
       text-shadow: 2px 2px 0 #d66efd, 0 0 18px #53f0e4aa;
     }
-    #startScreen .start-dev,
-    #startScreen .start-pre {
+    #startScreen .mode-toggles {
       position: absolute;
       z-index: 2;
       bottom: max(18px, env(safe-area-inset-bottom));
       left: max(18px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      max-width: calc(100vw - 36px);
+      flex-wrap: wrap;
+    }
+    #startScreen .start-dev,
+    #startScreen .start-pre {
       justify-content: flex-start;
       margin: 0;
       padding: 7px 9px;
@@ -436,7 +443,6 @@
       backdrop-filter: blur(3px);
     }
     #startScreen .start-pre {
-      bottom: max(48px, calc(env(safe-area-inset-bottom) + 30px));
       color: #53f0e4;
       border-color: #53f0e488;
     }
@@ -619,11 +625,13 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.73</b> · 2026.08.28</p>
-        <label class="dev-toggle start-dev"
-          ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
-        ><label class="dev-toggle start-pre"
-          ><input id="preToggle" type="checkbox" />PRE MODE · SVG PIECES</label
+        <p class="build-version">BUILD <b>v0.10.74</b> · 2026.08.28</p>
+        <div class="mode-toggles">
+          <label class="dev-toggle start-dev"
+            ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
+          ><label class="dev-toggle start-pre"
+            ><input id="preToggle" type="checkbox" />PRE MODE · LEGACY PIECES</label
+        </div>
         ><nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
           <button class="start-button" id="startButton">PLAY</button>
@@ -732,6 +740,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.73"></script>
+    <script src="game.js?v=v0.10.74"></script>
   </body>
 </html>

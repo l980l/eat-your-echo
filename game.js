@@ -86,9 +86,10 @@
       queen: "♛",
       king: "♚",
     },
-    // PRE MODE uses outlines extracted from macOS Apple Symbols — the exact
-    // font fallback used by the original canvas glyphs on this Mac. Keeping
-    // the paths here prevents iOS from substituting a different pawn glyph.
+    // Main mode uses outlines extracted from macOS Apple Symbols — the exact
+    // font fallback used by the original canvas glyphs on this Mac. This
+    // prevents iOS from substituting a different pawn glyph. PRE MODE keeps
+    // the prior Unicode rendering for comparison.
     preSvgShapes = {
       pawn: 'M1422 -299H116Q116 -165 136.5 -75Q157 15 206 95Q268 196 336.5 255.5Q405 315 525 371Q477 432 459.5 480Q442 528 442 601Q442 686 490.5 758.5Q539 831 629 881Q574 960 574 1006Q574 1087 630 1143.5Q686 1200 767 1200Q843 1200 899 1143.5Q955 1087 955 1010Q955 957 899 884Q1007 828 1046 760Q1095 675 1095 591Q1095 481 1013 373Q1141 309 1208 251.5Q1275 194 1328 102Q1423 -61 1423 -246Z',
       knight: 'M1420 -300H494Q489 -256 489 -231Q489 -156 535.5 -45Q582 66 651 155L721 245Q779 320 816 436Q749 348 681.5 306Q614 264 509 246Q473 162 440 127Q407 92 364 92Q356 92 335 93Q373 123 398 172Q322 102 293 102Q258 102 193.5 171Q129 240 129 277Q129 318 163.5 406.5Q198 495 241 566L300 662Q325 703 348 765Q379 851 404 879.5Q429 908 507 948Q485 993 473 1015L439 1072Q431 1087 431 1103Q431 1126 462 1126Q488 1126 539.5 1088Q591 1050 645 992Q659 1051 659 1071L657 1142Q657 1174 668 1186Q674 1193 685 1193Q775 1193 828 1003Q1011 935 1121 820Q1224 711 1308 537Q1358 434 1392.5 256.5Q1427 79 1427 -78L1423 -183ZM1357 -226L1361 -88Q1361 79 1331.5 237.5Q1302 396 1251 507Q1175 671 1084 765.5Q993 860 842 933L852 874Q1071 756 1191 509Q1311 262 1311 -71L1310 -133L1308 -226ZM593 828Q516 817 490 789.5Q464 762 464 691L477 703Q528 718 534 730L570 795Q576 807 593 828ZM288 312Q246 308 228 269Q242 265 252 265Q288 265 288 305Q288 306 288 312Z',
@@ -1937,7 +1938,7 @@
     g.textBaseline = "middle";
     // Apple Symbols uses a 2048-unit em while the fixed SVG viewport is
     // 1760 units wide. These multipliers preserve the old canvas font sizes.
-    if (S.pre) drawPrePiece(t, q.x, q.y, s * (bossPiece ? 0.81 : 0.54), enemy ? col : "#f1ffff");
+    if (!S.pre) drawPrePiece(t, q.x, q.y, s * (bossPiece ? 0.81 : 0.54), enemy ? col : "#f1ffff");
     else {
       g.font = "700 " + s * (bossPiece ? 0.94 : 0.62) + "px Georgia, 'Times New Roman', serif";
       g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
@@ -2297,7 +2298,7 @@
       g.fillStyle = color;
       g.textAlign = "center";
       g.textBaseline = "middle";
-      if (S.pre) drawPrePiece(e.type, target.x, target.y + 1, e.boss ? 21 : 15, color);
+      if (!S.pre) drawPrePiece(e.type, target.x, target.y + 1, e.boss ? 21 : 15, color);
       else {
         g.font = "700 " + (e.boss ? 17 : 13) + "px Georgia, serif";
         g.fillText(icon, target.x, target.y + 1);
@@ -2320,7 +2321,7 @@
       g.fillStyle = "#f5efff";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      if (S.pre) drawPrePiece(S.player.piece, q.x, q.y, s * 0.39, "#f1ffff");
+      if (!S.pre) drawPrePiece(S.player.piece, q.x, q.y, s * 0.39, "#f1ffff");
       else {
         g.font = "700 " + s * 0.45 + "px 'Gowun Batang', serif";
         g.fillText(glyph[S.player.piece], q.x, q.y);
