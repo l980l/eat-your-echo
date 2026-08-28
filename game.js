@@ -1881,7 +1881,9 @@
     g.fillStyle = enemy ? col : "#f1ffff";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    if (S.pre) drawPrePiece(t, q.x, q.y, s * (bossPiece ? 1.35 : 1.02), enemy ? col : "#f1ffff");
+    // Apple Symbols uses a 2048-unit em while the fixed SVG viewport is
+    // 1760 units wide. These multipliers preserve the old canvas font sizes.
+    if (S.pre) drawPrePiece(t, q.x, q.y, s * (bossPiece ? 0.81 : 0.54), enemy ? col : "#f1ffff");
     else {
       g.font = "700 " + s * (bossPiece ? 0.94 : 0.62) + "px Georgia, 'Times New Roman', serif";
       g.fillText(enemy ? enemyGlyph[t] : glyph[t], q.x, q.y);
@@ -2261,7 +2263,7 @@
       g.fillStyle = "#f5efff";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      if (S.pre) drawPrePiece(S.player.piece, q.x, q.y, s * 1.02, "#f1ffff");
+      if (S.pre) drawPrePiece(S.player.piece, q.x, q.y, s * 0.39, "#f1ffff");
       else {
         g.font = "700 " + s * 0.45 + "px 'Gowun Batang', serif";
         g.fillText(glyph[S.player.piece], q.x, q.y);
