@@ -166,6 +166,19 @@
       border-color: #ffffff44;
       box-shadow: none;
     }
+    .dev-password input {
+      box-sizing: border-box;
+      width: min(100%, 330px);
+      margin: 8px 0 4px;
+      padding: 14px 16px;
+      border: 1px solid #53f0e499;
+      background: #0c1028;
+      color: #efffff;
+      font: 600 18px "DM Mono", monospace;
+      letter-spacing: .15em;
+      outline: none;
+    }
+    .dev-password-status { min-height: 20px; color: #ff8da5; font-size: 13px; }
     @media (max-width: 560px) {
       .devbar {
         left: 10px;
@@ -586,7 +599,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.51</b> · 2026.08.28</p>
+        <p class="build-version">BUILD <b>v0.10.52</b> · 2026.08.28</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -646,6 +659,19 @@
           <button class="dev-close" id="devPickClose">닫기</button>
         </div>
       </section>
+      <section class="overlay hidden" id="devPasswordScreen">
+        <div class="panel intro dev-password">
+          <p class="eyebrow">DEV MODE · RESTRICTED</p>
+          <h2>개발자 인증</h2>
+          <p>테스트 도구를 사용하려면 비밀번호를 입력하세요.</p>
+          <input id="devPasswordInput" type="password" inputmode="numeric" autocomplete="off" maxlength="32" aria-label="개발자 모드 비밀번호" />
+          <p class="dev-password-status" id="devPasswordStatus"></p>
+          <div class="leaderboard-actions">
+            <button class="secondary-button" id="devPasswordCancel">취소</button>
+            <button id="devPasswordSubmit">인증 <b>↗</b></button>
+          </div>
+        </div>
+      </section>
       <section class="overlay hidden" id="gameOverScreen">
         <div class="panel intro">
           <p class="eyebrow">CHECKMATE</p>
@@ -684,6 +710,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.51"></script>
+    <script src="game.js?v=v0.10.52"></script>
   </body>
 </html>

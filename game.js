@@ -23,6 +23,11 @@
       resultRank: $("#resultRank"),
       devBar: $("#devBar"),
       devToggle: $("#devToggle"),
+      devPassword: $("#devPasswordScreen"),
+      devPasswordInput: $("#devPasswordInput"),
+      devPasswordStatus: $("#devPasswordStatus"),
+      devPasswordSubmit: $("#devPasswordSubmit"),
+      devPasswordCancel: $("#devPasswordCancel"),
       devSpeed: $("#devSpeed"),
       devAuto: $("#devAuto"),
       devPick: $("#devPickScreen"),
@@ -118,6 +123,8 @@
     H = 0,
     D = 1,
     last = 0;
+  const DEV_PASSWORD_HASH = "c4876de490dcf38b74d6c0d4f120cf01126c3d6a3a49b93ec81caae38ea1497e";
+  let devUnlocked = sessionStorage.getItem("its-my-turn-dev-unlocked") === "1";
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
     COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
@@ -327,7 +334,7 @@
   }
   function beginRun() {
     reset();
-    S.dev = ui.devToggle.checked;
+    S.dev = ui.devToggle.checked && devUnlocked;
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
     startBgm();
@@ -2325,6 +2332,39 @@
     });
     ui.devPick.classList.remove("hidden");
   }
+  function openDevPassword() {
+    ui.devPasswordInput.value = "";
+    ui.devPasswordStatus.textContent = "";
+    ui.devPassword.classList.remove("hidden");
+    requestAnimationFrame(() => ui.devPasswordInput.focus());
+  }
+  function closeDevPassword() {
+    ui.devPassword.classList.add("hidden");
+    ui.devPasswordInput.value = "";
+  }
+  async function unlockDevPassword() {
+    let password = ui.devPasswordInput.value;
+    if (!password) {
+      ui.devPasswordStatus.textContent = "비밀번호를 입력하세요.";
+      return;
+    }
+    try {
+      let bytes = new TextEncoder().encode(password),
+        digest = await crypto.subtle.digest("SHA-256", bytes),
+        hash = [...new Uint8Array(digest)].map((n) => n.toString(16).padStart(2, "0")).join("");
+      if (hash !== DEV_PASSWORD_HASH) {
+        ui.devPasswordStatus.textContent = "비밀번호가 맞지 않습니다.";
+        ui.devPasswordInput.select();
+        return;
+      }
+      devUnlocked = true;
+      sessionStorage.setItem("its-my-turn-dev-unlocked", "1");
+      ui.devToggle.checked = true;
+      closeDevPassword();
+    } catch (_) {
+      ui.devPasswordStatus.textContent = "인증을 처리할 수 없습니다. 다시 시도하세요.";
+    }
+  }
   c.addEventListener("pointerdown", tap);
   $("#startButton").addEventListener("click", () => {
     if (localStorage.getItem("its-my-turn-tutorial-seen")) beginRun();
@@ -2362,6 +2402,17 @@
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
     submitScore();
+  });
+  ui.devToggle.addEventListener("change", () => {
+    if (ui.devToggle.checked && !devUnlocked) {
+      ui.devToggle.checked = false;
+      openDevPassword();
+    }
+  });
+  ui.devPasswordSubmit.addEventListener("click", unlockDevPassword);
+  ui.devPasswordCancel.addEventListener("click", closeDevPassword);
+  ui.devPasswordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") unlockDevPassword();
   });
   $("#devXp").addEventListener("click", devXp);
   $("#devPawn").addEventListener("click", devPawn);
