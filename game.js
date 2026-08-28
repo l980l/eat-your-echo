@@ -97,6 +97,9 @@
       player: null,
       enemies: [],
       items: [],
+      terrain: [],
+      wormholeId: 0,
+      terrainNotice: "",
       itemCooldown: 0,
       invincibleBeats: 0,
       rangeBoostMoves: 0,
@@ -288,6 +291,12 @@
       title: "보스 몬스터",
       copy: "보스 몬스터는 일반 적과 다르게 특수한 기믹을 갖고 있습니다. 상태 표시와 공격 예고를 잘 보고 조심해서 상대하세요.",
       visual: '<div class="tutorial-boss-demo"><div class="tutorial-boss-piece">♜<small>IRON ROOK · 5/5</small></div><div class="tutorial-boss-line"></div><div class="tutorial-boss-state">LOCKED<br/>DODGE LINE</div></div>',
+    },
+    {
+      eyebrow: "RISING TERRAIN",
+      title: "웨이브가 오르면 보드도 바뀝니다",
+      copy: "벽은 통과할 수 없고 장거리 이동도 막습니다. 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
+      visual: '<div class="tutorial-item" style="color:#aeb7d3">▦ WALL</div><div class="tutorial-item" style="color:#ffd166">+1 AMPLIFY</div><div class="tutorial-item" style="color:#b971ff">◉ WORMHOLE</div>',
     },
   ];
   let tutorialPage = 0,
@@ -589,6 +598,9 @@
     S.phase = "enemy";
     S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = S.riskBeats = 0;
     S.items = [];
+    S.terrain = [];
+    S.wormholeId = 0;
+    S.terrainNotice = "";
     S.itemCooldown = S.invincibleBeats = S.rangeBoostMoves = S.extendedMoves = 0;
     S.displayChain = 0;
     S.devSpeed = 1;
@@ -659,7 +671,8 @@
       base;
     let longStride = p.traits?.includes("longStride"),
       fieldStride = S.rangeBoostMoves > 0,
-      extraRange = fieldStride ? 2 : 0;
+      terrainStride = terrainAt(p.x, p.y)?.type === "amplifier",
+      extraRange = (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0);
     if (piece === "pawn" || piece === "king")
       base = king.flatMap(([x, y]) =>
         Array.from({ length: (longStride ? 3 : 1) + extraRange }, (_, i) => [x * (i + 1), y * (i + 1)]),
@@ -675,15 +688,11 @@
         [-2, 1],
         [-1, 2],
       ];
-      if (longStride || fieldStride)
+      let knightRange = (longStride ? 1 : 0) + (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0);
+      for (let n = 3; n <= 2 + knightRange; n++)
         base.push(
-          [1, 3], [3, 1], [3, -1], [1, -3],
-          [-1, -3], [-3, -1], [-3, 1], [-1, 3],
-        );
-      if (fieldStride)
-        base.push(
-          [1, 4], [4, 1], [4, -1], [1, -4],
-          [-1, -4], [-4, -1], [-4, 1], [-1, 4],
+          [1, n], [n, 1], [n, -1], [1, -n],
+          [-1, -n], [-n, -1], [-n, 1], [-1, n],
         );
     }
     else {
@@ -717,11 +726,33 @@
     let p = S.player;
     S.moves = dirs(p.piece)
       .map(([x, y]) => ({ x: p.x + x, y: p.y + y }))
+      .filter((m) => !isWall(m.x, m.y) && pathClear(p, m, p.piece))
       .filter((m) => !S.enemies.some((e) => e.boss && e.x === m.x && e.y === m.y && e.bossPhase !== "vulnerable"));
     S.moveReach = {
       x: Math.max(1, ...S.moves.map((m) => Math.abs(m.x - p.x))),
       y: Math.max(1, ...S.moves.map((m) => Math.abs(m.y - p.y))),
     };
+  }
+  function terrainAt(x, y) {
+    return S.terrain.find((t) => t.x === x && t.y === y);
+  }
+  function isWall(x, y) {
+    return terrainAt(x, y)?.type === "wall";
+  }
+  function pathClear(from, to, piece) {
+    if (piece === "knight") return true;
+    let dx = to.x - from.x,
+      dy = to.y - from.y,
+      steps = Math.max(Math.abs(dx), Math.abs(dy)),
+      sx = Math.sign(dx),
+      sy = Math.sign(dy);
+    for (let i = 1; i <= steps; i++) if (isWall(from.x + sx * i, from.y + sy * i)) return false;
+    return true;
+  }
+  function wormholeExit(x, y) {
+    let gate = terrainAt(x, y);
+    if (gate?.type !== "wormhole") return null;
+    return S.terrain.find((t) => t.type === "wormhole" && t.pair === gate.pair && t !== gate) || null;
   }
   function burst(x, y, color = "#53f0e4", n = 12) {
     for (let i = 0; i < n; i++) {
@@ -832,6 +863,50 @@
     S.itemCooldown = 2;
     burst(x, y, FIELD_ITEMS[type].color, 14);
   }
+  function terrainSpot(minDistance = 4) {
+    let p = S.player;
+    for (let i = 0; i < 36; i++) {
+      let radius = minDistance + Math.floor(Math.random() * 5),
+        x = p.x + Math.floor(Math.random() * (radius * 2 + 1)) - radius,
+        y = p.y + Math.floor(Math.random() * (radius * 2 + 1)) - radius;
+      if (
+        Math.max(Math.abs(x - p.x), Math.abs(y - p.y)) >= minDistance &&
+        !terrainAt(x, y) &&
+        !S.items.some((item) => item.x === x && item.y === y) &&
+        !S.enemies.some((e) => e.x === x && e.y === y)
+      )
+        return { x, y };
+    }
+    return null;
+  }
+  function addTerrain(type) {
+    if (type === "wormhole") {
+      let a = terrainSpot(5),
+        b = terrainSpot(5);
+      if (!a || !b || (a.x === b.x && a.y === b.y)) return false;
+      let pair = ++S.wormholeId;
+      S.terrain.push({ ...a, type, pair }, { ...b, type, pair });
+      burst(a.x, a.y, "#b971ff", 20);
+      burst(b.x, b.y, "#b971ff", 20);
+      S.terrainNotice = "새 지형: 웜홀 — 같은 색의 출구로 이동합니다.";
+      return true;
+    }
+    let spot = terrainSpot(4);
+    if (!spot) return false;
+    S.terrain.push({ ...spot, type });
+    let amplifier = type === "amplifier";
+    burst(spot.x, spot.y, amplifier ? "#ffd166" : "#6d718d", 18);
+    S.terrainNotice = amplifier
+      ? "새 지형: 증폭 지대 — 이 칸에서 출발하면 사거리가 +1입니다."
+      : "새 지형: 벽 — 통과할 수 없고, 장거리 이동도 막습니다.";
+    return true;
+  }
+  function spawnTerrainByWave() {
+    let count = (type) => S.terrain.filter((t) => t.type === type).length;
+    if (S.wave >= 12 && S.wave % 12 === 0 && count("wall") < 7) addTerrain("wall");
+    if (S.wave >= 24 && (S.wave - 24) % 18 === 0 && count("amplifier") < 5) addTerrain("amplifier");
+    if (S.wave >= 60 && (S.wave - 60) % 30 === 0 && count("wormhole") < 6) addTerrain("wormhole");
+  }
   function collectItemsAt(x, y, combo, hitSet) {
     let picked = S.items.filter((item) => item.x === x && item.y === y),
       result = { hits: 0, kills: 0, points: 0, names: [] };
@@ -924,6 +999,7 @@
           : 1,
       risk = S.riskBeats > 0;
     if (risk) maxHp = Math.min(7, maxHp + 1);
+    if (terrainAt(x, y)) return;
     S.enemies.push({
       x,
       y,
@@ -943,7 +1019,7 @@
       spots = [[0, -4], [4, 0], [0, 4], [-4, 0]]
         .sort(() => Math.random() - 0.5)
         .map(([x, y]) => ({ x: p.x + x, y: p.y + y })),
-      q = spots.find((spot) => !S.enemies.some((e) => e.x === spot.x && e.y === spot.y));
+      q = spots.find((spot) => !terrainAt(spot.x, spot.y) && !S.enemies.some((e) => e.x === spot.x && e.y === spot.y));
     if (!q) return;
     S.enemies.push({
       x: q.x,
@@ -991,7 +1067,7 @@
         for (let [dx, dy] of ds) {
           for (let n = 1; n <= 3; n++) {
             let q = { x: e.x + dx * n, y: e.y + dy * n };
-            if (occupied.has(K(q.x, q.y))) break;
+            if (occupied.has(K(q.x, q.y)) || isWall(q.x, q.y)) break;
             opts.push(q);
           }
         }
@@ -1006,7 +1082,7 @@
         [-2, -1],
         [-2, 1],
         [-1, 2],
-      ].map(([x, y]) => ({ x: e.x + x, y: e.y + y }));
+      ].map(([x, y]) => ({ x: e.x + x, y: e.y + y })).filter((q) => !isWall(q.x, q.y));
     else if (e.type === "bishop")
       slide([
         [1, 1],
@@ -1025,7 +1101,7 @@
     else
       opts = king
         .map(([x, y]) => ({ x: e.x + x, y: e.y + y }))
-        .filter((q) => !occupied.has(K(q.x, q.y)));
+        .filter((q) => !occupied.has(K(q.x, q.y)) && !isWall(q.x, q.y));
     return (
       opts.sort((a, b) => dist(a, p) - dist(b, p))[0] || { x: e.x, y: e.y }
     );
@@ -1111,6 +1187,7 @@
     let enemySpawns = S.wave % 4 === 0 ? 2 : 1;
     for (let i = 0; i < enemySpawns; i++) spawn();
     if (S.wave % 30 === 0) spawnRookBoss();
+    spawnTerrainByWave();
     if (Math.random() < 1 - Math.pow(0.92, enemySpawns)) spawnFieldItem();
     if (S.riskBeats > 0) S.riskBeats--;
     hud();
@@ -1127,7 +1204,9 @@
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
     let ironRook = boss();
-    ui.hint.textContent = S.grace
+    let terrainNotice = S.terrainNotice;
+    S.terrainNotice = "";
+    ui.hint.textContent = terrainNotice || (S.grace
       ? "준비 박자 " + S.grace + " — 아직은 잡히지 않습니다."
       : ironRook?.bossPhase === "telegraph"
         ? "철의 룩이 " + (ironRook.bossAxis === "row" ? "가로" : "세로") + " 줄을 예고합니다 — 붉은 선 밖으로 이동하세요."
@@ -1135,7 +1214,7 @@
           ? "철의 룩 코어 노출! 지금 룩을 밟아 피해를 주세요."
       : S.riskBeats
         ? "위험 계약 " + S.riskBeats + "박자 남음 — 강화 적 처치 시 XP ×2 · 점수 ×1.5"
-        : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.";
+        : "빛나는 칸을 한 번 선택하세요 — 적을 밟으면 XP를 얻습니다.");
   }
   function offerRisk() {
     S.phase = "risk";
@@ -1185,6 +1264,27 @@
       attacked ||= r.hits > 0;
       gained += r.kills;
       earned += r.points;
+    }
+    let exit = wormholeExit(p.x, p.y);
+    if (exit) {
+      let entrance = { x: p.x, y: p.y };
+      p.x = exit.x;
+      p.y = exit.y;
+      S.trail.push({ x1: entrance.x, y1: entrance.y, x2: p.x, y2: p.y, life: 1 });
+      burst(entrance.x, entrance.y, "#b971ff", 18);
+      burst(p.x, p.y, "#b971ff", 18);
+      let warpPickup = collectItemsAt(p.x, p.y, combo, struck);
+      attacked ||= warpPickup.hits > 0;
+      gained += warpPickup.kills;
+      earned += warpPickup.points;
+      let exitCaught = S.enemies.filter((e) => e.x === p.x && e.y === p.y);
+      if (exitCaught.length) {
+        let r = damageEnemies(exitCaught, combo, struck);
+        attacked ||= r.hits > 0;
+        gained += r.kills;
+        earned += r.points;
+      }
+      ui.hint.textContent = "웜홀을 통과했습니다.";
     }
     if (p.traits.includes("shockwave")) {
       let v = S.enemies.filter(
@@ -1497,6 +1597,59 @@
     g.strokeStyle = "#66609422";
     g.strokeRect(q.x - s / 2, q.y - s / 2, s, s);
   }
+  function terrainTile(tile) {
+    let q = pos(tile.x, tile.y),
+      s = size(),
+      pulse = 0.75 + Math.sin(performance.now() / 260 + tile.x) * 0.16;
+    g.save();
+    g.translate(q.x, q.y);
+    if (tile.type === "wall") {
+      g.fillStyle = "#272b40";
+      g.strokeStyle = "#78809b";
+      g.lineWidth = 2;
+      g.fillRect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8);
+      g.strokeRect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8);
+      g.strokeStyle = "#a5acc4";
+      g.globalAlpha = 0.48;
+      for (let y = -0.22; y <= 0.22; y += 0.22) {
+        g.beginPath();
+        g.moveTo(-s * 0.34, y * s);
+        g.lineTo(s * 0.34, y * s);
+        g.stroke();
+      }
+    } else if (tile.type === "amplifier") {
+      g.strokeStyle = "#ffd166";
+      g.shadowColor = "#ffd166";
+      g.shadowBlur = 17;
+      g.lineWidth = 2.5;
+      g.globalAlpha = pulse;
+      g.beginPath();
+      g.arc(0, 0, s * 0.29, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = "#fff0a8";
+      g.font = "700 " + s * 0.31 + "px monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText("+1", 0, 1);
+    } else if (tile.type === "wormhole") {
+      let colors = ["#b971ff", "#53f0e4", "#ff72c9"],
+        col = colors[(tile.pair - 1) % colors.length];
+      g.strokeStyle = col;
+      g.shadowColor = col;
+      g.shadowBlur = 18;
+      g.lineWidth = 3;
+      g.globalAlpha = pulse;
+      g.beginPath();
+      g.arc(0, 0, s * 0.3, performance.now() / 430, performance.now() / 430 + Math.PI * 1.7);
+      g.stroke();
+      g.globalAlpha = 0.45;
+      g.beginPath();
+      g.arc(0, 0, s * 0.16, 0, Math.PI * 2);
+      g.fillStyle = col;
+      g.fill();
+    }
+    g.restore();
+  }
   function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "") {
     let q = pos(x, y),
       s = size(),
@@ -1588,6 +1741,7 @@
       cy = Math.floor(S.camera.y);
     for (let y = cy - rows; y <= cy + rows; y++)
       for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
+    S.terrain.forEach(terrainTile);
     let ironRook = boss();
     if (ironRook?.bossPhase === "telegraph") {
       let q = pos(ironRook.x, ironRook.y);
