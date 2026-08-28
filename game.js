@@ -1901,6 +1901,17 @@
     ui.devSpeed.textContent = "[4] ×" + S.devSpeed + " SPEED";
     ui.hint.textContent = "DEV: 게임 속도 ×" + S.devSpeed;
   }
+  function devBoss() {
+    if (!S.running || ["upgrade", "dead", "devpick"].includes(S.phase)) return;
+    if (boss()) {
+      ui.hint.textContent = "DEV: 이미 IRON ROOK가 보드에 있습니다.";
+      return;
+    }
+    spawnRookBoss();
+    moves();
+    hud();
+    ui.hint.textContent = "DEV: IRON ROOK를 소환했습니다.";
+  }
   function closeDevPick() {
     ui.devPick.classList.add("hidden");
     S.phase = S.devReturnPhase || "player";
@@ -1991,6 +2002,7 @@
   $("#devSpeed").addEventListener("click", devSpeed);
   $("#devPiece").addEventListener("click", () => openDevPick("piece"));
   $("#devTrait").addEventListener("click", () => openDevPick("trait"));
+  $("#devBoss").addEventListener("click", devBoss);
   $("#devPickClose").addEventListener("click", closeDevPick);
   document.addEventListener("keydown", (e) => {
     if (!S.dev) return;
@@ -2001,6 +2013,7 @@
     if (k === "4") devSpeed();
     if (k === "5") openDevPick("piece");
     if (k === "6") openDevPick("trait");
+    if (k === "7") devBoss();
     if (k === "d") ui.devBar.classList.toggle("hidden");
   });
   document.addEventListener(
