@@ -312,7 +312,7 @@
       eyebrow: "RISING TERRAIN",
       title: "웨이브가 오르면 보드도 바뀝니다",
       copy: "벽은 장벽 형태로 나타나며 통과할 수 없고 장거리 이동도 막습니다. 2×2 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
-      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#ffd166"><b>+1 AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#5a8dff"><b>^ AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
     },
   ];
   let tutorialPage = 0,
@@ -957,7 +957,7 @@
     if (!cells) return false;
     S.terrain.push(...cells.map((cell) => ({ ...cell, type })));
     let amplifier = type === "amplifier";
-    cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#ffd166" : "#6d718d", 10));
+    cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#5a8dff" : "#6d718d", 10));
     S.terrainNotice = amplifier
       ? "새 지형: 증폭 지대 — 2×2 구역에서 출발하면 사거리가 +1입니다."
       : "새 지형: 벽 — 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
@@ -1785,15 +1785,15 @@
         g.stroke();
       }
     } else if (tile.type === "amplifier") {
-      g.strokeStyle = "#ffd166";
-      g.shadowColor = "#ffd166";
-      g.shadowBlur = 17;
+      g.strokeStyle = "#5a8dff";
+      g.shadowColor = "#5a8dff";
+      g.shadowBlur = 12;
       g.lineWidth = 2.5;
       g.globalAlpha = pulse;
-      g.fillStyle = "#241e0f";
+      g.fillStyle = "#111a38";
       g.fillRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
       g.strokeRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
-      g.fillStyle = "#fff0a8";
+      g.fillStyle = "#dce7ff";
       g.font = "700 " + s * 0.31 + "px monospace";
       g.textAlign = "center";
       g.textBaseline = "middle";
