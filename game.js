@@ -2212,18 +2212,11 @@
       let q = pos(activeBoss.x, activeBoss.y),
         span = Math.max(W, H) * 1.5;
       g.save();
-      g.globalAlpha = 0.6 + Math.sin(performance.now() / 130) * 0.18;
       g.strokeStyle = "#ff5577";
       g.shadowColor = "#ff315d";
-      g.shadowBlur = 16;
-      g.lineWidth = Math.max(3, s * 0.09);
-      g.setLineDash([9, 8]);
+      g.setLineDash([]);
       [activeBoss.bossAxis, activeBoss.rageAxis].filter(Boolean).forEach((axis, index) => {
-        g.globalAlpha = (0.6 + Math.sin(performance.now() / 130) * 0.18) * (index ? 0.75 : 1);
-        if (index) {
-          g.strokeStyle = "#ff9f43";
-          g.shadowColor = "#ff9f43";
-        }
+        let pulse = (0.66 + Math.sin(performance.now() / 130) * 0.16) * (index ? 0.8 : 1);
         g.beginPath();
         if (axis === "row") {
           g.moveTo(0, q.y);
@@ -2238,6 +2231,17 @@
           g.moveTo(q.x - span, q.y + span);
           g.lineTo(q.x + span, q.y - span);
         }
+        // Boss telegraphs are solid red danger lanes, deliberately distinct
+        // from the red dashed lines that represent enemy movement history.
+        g.globalAlpha = pulse * 0.18;
+        g.strokeStyle = "#ff5577";
+        g.shadowBlur = 0;
+        g.lineWidth = Math.max(16, s * 0.48);
+        g.stroke();
+        g.globalAlpha = pulse;
+        g.shadowColor = "#ff315d";
+        g.shadowBlur = 18;
+        g.lineWidth = Math.max(3, s * 0.09);
         g.stroke();
       });
       g.restore();
