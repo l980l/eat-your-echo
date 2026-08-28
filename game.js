@@ -135,6 +135,7 @@
       invincibleBeats: 0,
       rangeBoostMoves: 0,
       extendedMoves: 0,
+      bonusMove: false,
       moves: [],
       moveReach: { x: 1, y: 1 },
       particles: [],
@@ -701,6 +702,7 @@
     S.wormholeId = 0;
     S.terrainNotice = "";
     S.itemCooldown = S.invincibleBeats = S.rangeBoostMoves = S.extendedMoves = 0;
+    S.bonusMove = false;
     S.displayChain = 0;
     S.devSpeed = 1;
     S.autoPlay = false;
@@ -1362,6 +1364,7 @@
   }
   function enemyBeat() {
     rememberRewind("ENEMY TURN");
+    S.bonusMove = false;
     S.wave++;
     let invulnerable = S.invincibleBeats > 0;
     if (invulnerable) S.invincibleBeats--;
@@ -1672,6 +1675,7 @@
         S.chain += gained;
         showCombo(S.chain, previousChain);
       }
+      S.bonusMove = true;
       S.flash = 1;
       moves();
       ui.hint.textContent =
@@ -1682,6 +1686,7 @@
     }
     if (S.extendedMoves > 0) {
       S.extendedMoves--;
+      S.bonusMove = true;
       S.flash = 1;
       moves();
       ui.hint.textContent = "은 목걸이 — 처치 없이 한 번 더 움직입니다. (" + S.extendedMoves + "회 남음)";
@@ -1690,12 +1695,14 @@
     if (p.traits.includes("slipstream") && !p.slipUsed && !p.slipCooldown) {
       p.slipUsed = true;
       p.slipCooldown = 2;
+      S.bonusMove = true;
       S.flash = 1;
       moves();
       traitFx("slip", p.x, p.y);
       return;
     }
     S.phase = "enemy";
+    S.bonusMove = false;
     S.elapsed = 0;
     ui.phase.textContent = "ENEMY BEAT";
     ui.beat.textContent = "CHARGING";
@@ -2417,6 +2424,20 @@
     S.items.forEach(fieldItem);
     S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName, e.seals, e.enraged));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
+    if (S.phase === "player" && S.bonusMove) {
+      let q = pos(S.player.x, S.player.y);
+      let color = S.chain ? COMBO_COLORS[(S.chain - 1) % COMBO_COLORS.length] : "#53f0e4";
+      g.save();
+      g.globalAlpha = 0.82 + Math.sin(performance.now() / 130) * 0.18;
+      g.fillStyle = color;
+      g.shadowColor = color;
+      g.shadowBlur = 14;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.font = "700 " + Math.max(10, s * 0.17) + "px monospace";
+      g.fillText("+1 MOVE", q.x, q.y - s * 0.65);
+      g.restore();
+    }
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
         t = 1 - S.death / 1.1;
