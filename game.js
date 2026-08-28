@@ -358,7 +358,7 @@
     {
       eyebrow: "BOSS MONSTER",
       title: "보스 몬스터",
-      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. BLOOD QUEEN은 일반 적 4기를 처치해야 열리고, CHECKMATE BISHOP은 청록 SAFE 구역으로 이동해야 합니다. 공격 뒤에도 내 턴이 이어집니다.",
+      copy: "보스는 청록색으로 빛날 때만 공격할 수 있으며, 각자 특수한 능력을 지니고 있습니다.",
       visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♛</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♛</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
     },
     {
