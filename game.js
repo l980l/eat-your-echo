@@ -2106,13 +2106,14 @@
           (e) => e.boss && e.bossPhase === "vulnerable" && e.x === m.x && e.y === m.y,
         ),
         safeTarget = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCells?.some((cell) => cell.x === m.x && cell.y === m.y),
+        sanctuaryUnsafe = activeBoss?.bossPhase === "sanctuary" && !safeTarget,
         active = S.phase === "player",
         a = active
           ? 0.2 + 0.19 * Math.sin(performance.now() / 100) + S.flash * 0.35
           : 0.07;
-      g.fillStyle = safeTarget ? "rgba(83,240,228," + Math.min(0.76, a + 0.24) + ")" : bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
+      g.fillStyle = safeTarget ? "rgba(83,240,228," + Math.min(0.76, a + 0.24) + ")" : sanctuaryUnsafe ? "rgba(255,49,93," + Math.min(0.65, a + 0.18) + ")" : bossTarget ? "rgba(255,209,102," + Math.min(0.9, a + 0.25) + ")" : "rgba(83,240,228," + a + ")";
       g.fillRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
-      g.strokeStyle = safeTarget ? "#7ff8ef" : bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
+      g.strokeStyle = safeTarget ? "#7ff8ef" : sanctuaryUnsafe ? "#ff5577" : bossTarget ? "#ffd166" : active ? "#53f0e4" : "#53f0e466";
       g.lineWidth = safeTarget ? 3 : active ? 2 : 1;
       g.strokeRect(q.x - s * 0.42, q.y - s * 0.42, s * 0.84, s * 0.84);
       if (bossTarget) {
