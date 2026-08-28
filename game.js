@@ -1806,14 +1806,11 @@
       g.shadowBlur = 18;
       g.lineWidth = 3;
       g.globalAlpha = pulse;
-      g.beginPath();
-      g.arc(0, 0, s * 0.3, performance.now() / 430, performance.now() / 430 + Math.PI * 1.7);
-      g.stroke();
+      g.fillStyle = "#11172c";
+      g.fillRect(-s * 0.31, -s * 0.31, s * 0.62, s * 0.62);
+      g.strokeRect(-s * 0.31, -s * 0.31, s * 0.62, s * 0.62);
       g.globalAlpha = 0.45;
-      g.beginPath();
-      g.arc(0, 0, s * 0.16, 0, Math.PI * 2);
-      g.fillStyle = col;
-      g.fill();
+      g.strokeRect(-s * 0.15, -s * 0.15, s * 0.3, s * 0.3);
     }
     g.restore();
   }
@@ -1881,8 +1878,10 @@
     g.shadowColor = data.color;
     g.shadowBlur = 18;
     g.lineWidth = 2.5;
-    g.fillRect(q.x - s * 0.26, q.y - s * 0.26, s * 0.52, s * 0.52);
-    g.strokeRect(q.x - s * 0.26, q.y - s * 0.26, s * 0.52, s * 0.52);
+    g.beginPath();
+    g.arc(q.x, q.y, s * 0.28, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
     g.fillStyle = data.color;
     g.font = "700 " + s * 0.31 + "px Georgia, serif";
     g.textAlign = "center";
