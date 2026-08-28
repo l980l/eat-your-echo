@@ -727,7 +727,15 @@
     S.moves = dirs(p.piece)
       .map(([x, y]) => ({ x: p.x + x, y: p.y + y }))
       .filter((m) => !isWall(m.x, m.y) && pathClear(p, m, p.piece))
-      .filter((m) => !S.enemies.some((e) => e.boss && e.x === m.x && e.y === m.y && e.bossPhase !== "vulnerable"));
+      .filter((m) => {
+        let exit = wormholeExit(m.x, m.y);
+        return !S.enemies.some(
+          (e) =>
+            e.boss &&
+            e.bossPhase !== "vulnerable" &&
+            ((e.x === m.x && e.y === m.y) || (exit && e.x === exit.x && e.y === exit.y)),
+        );
+      });
     S.moveReach = {
       x: Math.max(1, ...S.moves.map((m) => Math.abs(m.x - p.x))),
       y: Math.max(1, ...S.moves.map((m) => Math.abs(m.y - p.y))),
@@ -1201,6 +1209,14 @@
     S.phase = "player";
     S.flash = 1;
     moves();
+    if (!S.moves.length) {
+      S.phase = "enemy";
+      S.elapsed = 0;
+      ui.phase.textContent = "ENEMY TURN";
+      ui.beat.textContent = "NO MOVE";
+      ui.hint.textContent = "갈 수 있는 칸이 없습니다 — 적 턴으로 넘어갑니다.";
+      return;
+    }
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
     let ironRook = boss();
@@ -2094,23 +2110,30 @@
   function autoMove() {
     if (!S.autoPlay || S.phase !== "player" || !S.moves.length) return;
     let candidates = S.moves.map((m) => {
-      let target = S.enemies.find((e) => e.x === m.x && e.y === m.y),
-        remaining = S.enemies.filter((e) => e !== target || (e.hp || 1) > 1),
-        nearest = Math.min(...remaining.map((e) => Math.abs(e.x - m.x) + Math.abs(e.y - m.y)), 99),
+      let exit = wormholeExit(m.x, m.y),
+        landing = exit || m,
+        targets = S.enemies.filter(
+          (e) =>
+            (!e.boss || e.bossPhase === "vulnerable") &&
+            ((e.x === m.x && e.y === m.y) || (exit && e.x === landing.x && e.y === landing.y)),
+        ),
+        remaining = S.enemies.filter((e) => !targets.includes(e) || (e.hp || 1) > 1),
+        nearest = Math.min(...remaining.map((e) => Math.abs(e.x - landing.x) + Math.abs(e.y - landing.y)), 99),
         enemyStrike = remaining.filter(
           (e) =>
             !e.boss &&
-            toward(e, m).x === m.x &&
-            toward(e, m).y === m.y,
+            toward(e, landing).x === landing.x &&
+            toward(e, landing).y === landing.y,
         ).length,
         ironRook = boss(),
         rookStrike =
           ironRook?.bossPhase === "telegraph" &&
-          (ironRook.bossAxis === "row" ? m.y === ironRook.y : m.x === ironRook.x),
-        score = target
-          ? 1800 - (target.hp || 1) * 35
+          (ironRook.bossAxis === "row" ? landing.y === ironRook.y : landing.x === ironRook.x),
+        score = targets.length
+          ? 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
           : 420 - nearest * 24 - enemyStrike * 5000 - (rookStrike ? 9000 : 0);
-      if (target?.boss && target.bossPhase === "vulnerable") score += 5000;
+      if (targets.some((e) => e.boss && e.bossPhase === "vulnerable")) score += 5000;
+      if (exit && !targets.length) score -= 80;
       // A little noise prevents identical boards from producing a rigid loop.
       return { m, score: score + Math.random() * 12 };
     });
