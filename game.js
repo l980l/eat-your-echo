@@ -311,8 +311,8 @@
     {
       eyebrow: "RISING TERRAIN",
       title: "웨이브가 오르면 보드도 바뀝니다",
-      copy: "벽은 장벽 형태로 나타나며 통과할 수 없고 장거리 이동도 막습니다. 2×2 증폭 지대에서 출발하면 사거리가 +1 늘어나며, 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
-      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#5a8dff"><b>^ AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>◉ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
+      copy: "벽은 장벽 형태로 나타나며 통과할 수 없고 장거리 이동도 막습니다. 파란 2×2 증폭 지대는 사거리 +1, 붉은 2×2 감쇠 지대는 사거리 −1입니다. 웜홀에 들어가면 같은 색의 반대편 출구로 이동합니다.",
+      visual: '<div class="tutorial-codex"><div class="tutorial-entry" style="color:#aeb7d3"><b>▦ WALL</b><span>장벽 형태 · 플레이어·적 통과 불가</span></div><div class="tutorial-entry" style="color:#5a8dff"><b>^ AMPLIFIER</b><span>2×2 구역 · 출발 시 사거리 +1</span></div><div class="tutorial-entry" style="color:#ff5577"><b>v INHIBITOR</b><span>2×2 구역 · 출발 시 사거리 −1</span></div><div class="tutorial-entry" style="color:#b971ff"><b>▣ WORMHOLE</b><span>같은 색의 반대편 출구로 이동</span></div></div>',
     },
   ];
   let tutorialPage = 0,
@@ -692,11 +692,13 @@
       base;
     let longStride = p.traits?.includes("longStride"),
       fieldStride = S.rangeBoostMoves > 0,
-      terrainStride = terrainAt(p.x, p.y)?.type === "amplifier",
-      extraRange = (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0);
+      terrainType = terrainAt(p.x, p.y)?.type,
+      terrainStride = terrainType === "amplifier",
+      terrainDrag = terrainType === "inhibitor",
+      extraRange = (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0) - (terrainDrag ? 1 : 0);
     if (piece === "pawn" || piece === "king")
       base = king.flatMap(([x, y]) =>
-        Array.from({ length: (longStride ? 3 : 1) + extraRange }, (_, i) => [x * (i + 1), y * (i + 1)]),
+        Array.from({ length: Math.max(1, (longStride ? 3 : 1) + extraRange) }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
     else if (piece === "knight") {
       base = [
@@ -709,7 +711,7 @@
         [-2, 1],
         [-1, 2],
       ];
-      let knightRange = (longStride ? 1 : 0) + (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0);
+      let knightRange = Math.max(0, (longStride ? 1 : 0) + (fieldStride ? 2 : 0) + (terrainStride ? 1 : 0) - (terrainDrag ? 1 : 0));
       for (let n = 3; n <= 2 + knightRange; n++)
         base.push(
           [1, n], [n, 1], [n, -1], [1, -n],
@@ -733,7 +735,7 @@
                 [0, 1],
                 [0, -1],
               ],
-        range = (longStride ? 5 : 3) + extraRange;
+        range = Math.max(1, (longStride ? 5 : 3) + extraRange);
       base = b.flatMap(([x, y]) =>
         Array.from({ length: range }, (_, i) => [x * (i + 1), y * (i + 1)]),
       );
@@ -956,17 +958,21 @@
     }
     if (!cells) return false;
     S.terrain.push(...cells.map((cell) => ({ ...cell, type })));
-    let amplifier = type === "amplifier";
-    cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#5a8dff" : "#6d718d", 10));
+    let amplifier = type === "amplifier",
+      inhibitor = type === "inhibitor";
+    cells.forEach((cell) => burst(cell.x, cell.y, amplifier ? "#5a8dff" : inhibitor ? "#ff5577" : "#6d718d", 10));
     S.terrainNotice = amplifier
       ? "새 지형: 증폭 지대 — 2×2 구역에서 출발하면 사거리가 +1입니다."
-      : "새 지형: 벽 — 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
+      : inhibitor
+        ? "새 지형: 감쇠 지대 — 2×2 구역에서 출발하면 사거리가 −1입니다."
+        : "새 지형: 벽 — 장벽을 통과할 수 없고, 장거리 이동도 막습니다.";
     return true;
   }
   function spawnTerrainByWave() {
     let count = (type) => S.terrain.filter((t) => t.type === type).length;
     if (S.wave >= 12 && S.wave % 12 === 0 && count("wall") < 9) addTerrain("wall");
     if (S.wave >= 24 && (S.wave - 24) % 18 === 0 && count("amplifier") < 8) addTerrain("amplifier");
+    if (S.wave >= 42 && (S.wave - 42) % 24 === 0 && count("inhibitor") < 8) addTerrain("inhibitor");
     if (S.wave >= 60 && (S.wave - 60) % 30 === 0 && count("wormhole") < 6) addTerrain("wormhole");
   }
   function collectItemsAt(x, y, combo, hitSet) {
@@ -1798,6 +1804,20 @@
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText("^", 0, 1);
+    } else if (tile.type === "inhibitor") {
+      g.strokeStyle = "#ff5577";
+      g.shadowColor = "#ff5577";
+      g.shadowBlur = 12;
+      g.lineWidth = 2.5;
+      g.globalAlpha = pulse;
+      g.fillStyle = "#2a101d";
+      g.fillRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
+      g.strokeRect(-s * 0.29, -s * 0.29, s * 0.58, s * 0.58);
+      g.fillStyle = "#ffdce5";
+      g.font = "700 " + s * 0.31 + "px monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText("v", 0, -s * 0.04);
     } else if (tile.type === "wormhole") {
       let colors = ["#b971ff", "#53f0e4", "#ff72c9"],
         col = colors[(tile.pair - 1) % colors.length];
