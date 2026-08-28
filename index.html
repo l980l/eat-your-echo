@@ -447,6 +447,36 @@
       border-color: #53f0e488;
     }
     #startScreen .start-pre input { accent-color: #53f0e4; }
+    #rewindControls {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      bottom: max(42px, calc(env(safe-area-inset-bottom) + 22px));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: min(92vw, 540px);
+      transform: translateX(-50%);
+    }
+    #rewindControls.hidden { display: none; }
+    #rewindControls button {
+      min-height: 42px;
+      margin: 0;
+      padding: 10px 13px;
+      border-color: #ff8da5;
+      background: #171127e8;
+      color: #ffe9ef;
+      box-shadow: 0 0 18px #ff557744;
+      font-size: 12px;
+    }
+    #rewindControls button:disabled { opacity: .35; cursor: default; transform: none; filter: none; }
+    #rewindLabel { min-width: 82px; color: #ffb4c5; font: 700 10px monospace; letter-spacing: .08em; text-align: center; }
+    @media (max-width: 560px) {
+      #rewindControls { gap: 5px; bottom: max(30px, calc(env(safe-area-inset-bottom) + 12px)); }
+      #rewindControls button { padding: 9px 8px; font-size: 10px; }
+      #rewindLabel { min-width: 58px; font-size: 9px; }
+    }
     .risk-options { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
     .risk-options button { flex: 1; min-height: 106px; margin: 0; padding: 15px; background: #211229; color: #ffe9f7; border-color: #f45cf4; }
     .risk-options button:first-child { background: #f45cf4; color: #16081a; border-color: #ffd166; box-shadow: 0 0 26px #f45cf477; }
@@ -605,6 +635,12 @@
         적 말이 움직인 직후, 빛나는 칸 하나를 선택하세요.
       </div>
       <div class="meter"><i id="meterFill"></i></div>
+      <div id="rewindControls" class="hidden" aria-label="사망 직전 장면 보기">
+        <button id="rewindPrev">◀ 이전</button>
+        <span id="rewindLabel">1 / 5</span>
+        <button id="rewindNext">이후 ▶</button>
+        <button id="rewindDone">결과 보기</button>
+      </div>
       <div class="devbar hidden" id="devBar">
         <button id="devXp">[1] +XP</button
         ><button id="devPawn">[2] +PAWN</button
@@ -625,7 +661,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.78</b> · 2026.08.28</p>
+        <p class="build-version">BUILD <b>v0.10.79</b> · 2026.08.28</p>
         <div class="mode-toggles">
           <label class="dev-toggle start-dev"
             ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
@@ -740,6 +776,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.78"></script>
+    <script src="game.js?v=v0.10.79"></script>
   </body>
 </html>

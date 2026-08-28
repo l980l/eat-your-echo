@@ -10,6 +10,11 @@
       beat: $("#beatText"),
       hint: $("#hint"),
       meter: $("#meterFill"),
+      rewindControls: $("#rewindControls"),
+      rewindPrev: $("#rewindPrev"),
+      rewindNext: $("#rewindNext"),
+      rewindDone: $("#rewindDone"),
+      rewindLabel: $("#rewindLabel"),
       start: $("#startScreen"),
       upgrade: $("#upgradeScreen"),
       upgradeEyebrow: $("#upgradeEyebrow"),
@@ -711,6 +716,7 @@
     S.rewindHistory = [];
     S.rewind = null;
     S.deathReason = "";
+    ui.rewindControls.classList.add("hidden");
     S.upgradeOptions = [];
     S.player = { x: 0, y: 0, hp: 5, xp: 0, rank: 0, piece: "pawn", traits: [], slipUsed: false, slipCooldown: 0 };
     S.enemies = [
@@ -1838,13 +1844,29 @@
       return;
     }
     S.phase = "rewind";
-    S.rewind = { index: S.rewindHistory.length - 1, elapsed: 0 };
+    S.rewind = { index: S.rewindHistory.length - 1 };
     ui.phase.textContent = "LAST 5 MOVES";
     ui.beat.textContent = "REWIND";
     ui.hint.textContent = "체크메이트까지의 전개를 되돌립니다.";
+    ui.rewindControls.classList.remove("hidden");
+    updateRewindControls();
+  }
+  function updateRewindControls() {
+    if (!S.rewind) return;
+    let { index } = S.rewind,
+      total = S.rewindHistory.length;
+    ui.rewindLabel.textContent = index + 1 + " / " + total;
+    ui.rewindPrev.disabled = index <= 0;
+    ui.rewindNext.disabled = index >= total - 1;
+  }
+  function moveRewind(delta) {
+    if (S.phase !== "rewind" || !S.rewind) return;
+    S.rewind.index = Math.max(0, Math.min(S.rewindHistory.length - 1, S.rewind.index + delta));
+    updateRewindControls();
   }
   function over() {
     S.running = false;
+    ui.rewindControls.classList.add("hidden");
     S.finalScore = S.score;
     ui.result.textContent =
       (S.deathReason ? S.deathReason + ". " : "적 말이 당신을 잡았습니다. ") +
@@ -2488,15 +2510,9 @@
         ui.meter.style.background = "#ff315d";
         if (S.death <= 0) beginDeathRewind();
       } else if (S.phase === "rewind") {
-        S.rewind.elapsed += dt;
-        ui.meter.style.width = Math.max(0, (1 - S.rewind.elapsed / 0.72) * 100) + "%";
+        ui.meter.style.width = "100%";
         ui.meter.style.background = "#ff5577";
         ui.meter.style.boxShadow = "0 0 15px #ff5577";
-        if (S.rewind.elapsed >= 0.72) {
-          S.rewind.elapsed = 0;
-          S.rewind.index--;
-          if (S.rewind.index < 0) over();
-        }
       } else if (S.phase === "upgrade" && S.autoPlay) {
         S.autoElapsed += dt;
         if (S.autoElapsed >= 0.55 && performance.now() >= (S.upgradeLock || 0)) {
@@ -2736,6 +2752,9 @@
   ui.rankingNext.addEventListener("click", () => loadLeaderboard(leaderboardPage + 1).catch(() => {}));
   ui.riskAccept.addEventListener("click", () => resolveRisk(true));
   ui.riskDecline.addEventListener("click", () => resolveRisk(false));
+  ui.rewindPrev.addEventListener("click", () => moveRewind(-1));
+  ui.rewindNext.addEventListener("click", () => moveRewind(1));
+  ui.rewindDone.addEventListener("click", over);
   ui.scoreButton.addEventListener("click", () => {
     localStorage.setItem("its-my-turn-ranking-name", ui.scoreName.value.trim());
     submitScore();
