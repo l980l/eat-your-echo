@@ -142,6 +142,8 @@
     rook: { name: "IRON ROOK", hp: 5, xp: 5, score: 5000, axes: ["row", "column"] },
     bishop: { name: "VOID BISHOP", hp: 6, xp: 6, score: 6500, axes: ["diagDown", "diagUp"] },
     queen: { name: "CROWN QUEEN", hp: 7, xp: 8, score: 8000, axes: ["row", "column", "diagDown", "diagUp"] },
+    bloodQueen: { name: "BLOOD QUEEN", piece: "queen", hp: 8, xp: 10, score: 10000, axes: ["row", "column", "diagDown", "diagUp"], gimmick: "blood", seals: 4 },
+    checkmateBishop: { name: "CHECKMATE BISHOP", piece: "bishop", hp: 7, xp: 9, score: 9000, axes: ["diagDown", "diagUp"], gimmick: "sanctuary" },
   };
   const SUPABASE_URL = "https://ganvrpzlsmvbmcilerpq.supabase.co",
     SUPABASE_KEY = "sb_publishable_9VAPG9uz4EonoI_naGXemw_PCGDqOc4",
@@ -294,7 +296,7 @@
     {
       eyebrow: "BOSS MONSTER",
       title: "보스 몬스터",
-      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. 점선 밖으로 피한 뒤 청록 CORE OPEN 상태의 보스를 공격하세요. 공격 뒤에도 내 턴이 이어집니다.",
+      copy: "붉은 LOCKED 상태에서는 공격할 수 없습니다. IRON ROOK는 가로·세로, VOID BISHOP은 대각선, CROWN QUEEN은 모든 줄을 예고합니다. BLOOD QUEEN은 일반 적 4기를 처치해야 열리고, CHECKMATE BISHOP은 청록 SAFE 칸에 도착해야 합니다. 공격 뒤에도 내 턴이 이어집니다.",
       visual: '<div class="tutorial-boss-compare"><div class="tutorial-boss-card"><div class="tutorial-boss-piece">♛</div><span>✕ LOCKED<br/>DODGE LINE<br/>공격 불가</span></div><div class="tutorial-boss-card open"><div class="tutorial-boss-piece">♛</div><span>◆ CORE OPEN<br/>STRIKE<br/>공격 가능</span></div></div>',
     },
     {
@@ -845,6 +847,13 @@
       }
     });
     S.enemies = S.enemies.filter((e) => !dead.includes(e));
+    let sealedBoss = boss(),
+      minionKills = dead.filter((e) => !e.boss).length;
+    if (sealedBoss?.gimmick === "blood" && sealedBoss.bossPhase === "sealed" && minionKills) {
+      sealedBoss.seals = Math.max(0, sealedBoss.seals - minionKills);
+      burst(sealedBoss.x, sealedBoss.y, sealedBoss.seals ? "#ff5577" : "#53f0e4", sealedBoss.seals ? 12 : 34);
+      if (!sealedBoss.seals) sealedBoss.bossPhase = "vulnerable";
+    }
     if (dead.length) {
       gainXp(dead.reduce((sum, e) => sum + (e.boss ? e.bossXp : e.risk ? 2 : 1), 0));
       S.kills += dead.length;
@@ -1062,7 +1071,7 @@
     return axis === "row" ? "가로" : axis === "column" ? "세로" : axis === "diagDown" ? "↘ 대각선" : "↗ 대각선";
   }
   function nextBossKind() {
-    return ["rook", "bishop", "queen"][(Math.floor(S.wave / 30) - 1) % 3];
+    return ["rook", "bloodQueen", "bishop", "checkmateBishop", "queen"][(Math.floor(S.wave / 30) - 1) % 5];
   }
   function spawnBoss(kind = nextBossKind()) {
     if (boss()) return;
@@ -1077,21 +1086,35 @@
     S.enemies.push({
       x: q.x,
       y: q.y,
-      type: kind,
+      type: data.piece || kind,
+      bossType: kind,
       hp: data.hp,
       maxHp: data.hp,
       boss: true,
       bossName: data.name,
       bossXp: data.xp,
       bossScore: data.score,
-      bossPhase: "telegraph",
+      bossPhase: data.gimmick === "blood" ? "sealed" : data.gimmick === "sanctuary" ? "sanctuary" : "telegraph",
       bossAxis: data.axes[Math.floor(Math.random() * data.axes.length)],
+      gimmick: data.gimmick || "",
+      seals: data.seals || 0,
+      safeCell: null,
     });
     burst(q.x, q.y, "#ff5577", 42);
   }
   function advanceBoss() {
     let e = boss();
     if (!e) return null;
+    if (e.bossPhase === "sealed") return null;
+    if (e.bossPhase === "sanctuary") {
+      let safe = e.safeCell;
+      if (safe && S.player.x === safe.x && S.player.y === safe.y) {
+        e.bossPhase = "vulnerable";
+        burst(e.x, e.y, "#53f0e4", 34);
+        return null;
+      }
+      return { boss: e, from: { x: e.x, y: e.y }, sanctuary: true };
+    }
     if (e.bossPhase === "telegraph") {
       let hit = bossLineThreat(e);
       if (hit) return { boss: e, from: { x: e.x, y: e.y } };
@@ -1100,7 +1123,12 @@
       return null;
     }
     e.bossPhase = "telegraph";
-    let axes = BOSS_TYPES[e.type].axes;
+    if (e.gimmick === "sanctuary") {
+      e.bossPhase = "sanctuary";
+      e.safeCell = null;
+      return null;
+    }
+    let axes = BOSS_TYPES[e.bossType || e.type].axes;
     e.bossAxis = axes[Math.floor(Math.random() * axes.length)];
     return null;
   }
@@ -1191,7 +1219,9 @@
       S.flash = 0;
       ui.phase.textContent = "CHECKMATE";
       ui.beat.textContent = "BOSS STRIKE";
-      ui.hint.textContent = e.bossName + "의 예고선을 피하지 못했습니다.";
+      ui.hint.textContent = bossStrike.sanctuary
+        ? e.bossName + "의 SAFE 칸에 도착하지 못했습니다."
+        : e.bossName + "의 예고선을 피하지 못했습니다.";
       return;
     }
     if (bossStrike && invulnerable) burst(S.player.x, S.player.y, "#8eeaff", 26);
@@ -1269,10 +1299,18 @@
     ui.phase.textContent = "YOUR MOVE";
     ui.beat.textContent = "MOVE NOW";
     let activeBoss = boss();
+    if (activeBoss?.bossPhase === "sanctuary" && !activeBoss.safeCell) {
+      let safeMoves = S.moves.filter((m) => !S.enemies.some((e) => e.x === m.x && e.y === m.y));
+      activeBoss.safeCell = safeMoves[Math.floor(Math.random() * safeMoves.length)] || S.moves[0];
+    }
     let terrainNotice = S.terrainNotice;
     S.terrainNotice = "";
     ui.hint.textContent = terrainNotice || (S.grace
       ? "준비 박자 " + S.grace + " — 아직은 잡히지 않습니다."
+      : activeBoss?.bossPhase === "sealed"
+        ? activeBoss.bossName + " 봉인 " + activeBoss.seals + "/4 — 일반 적을 처치해 봉인을 푸세요."
+        : activeBoss?.bossPhase === "sanctuary"
+          ? activeBoss.bossName + "의 심판 — 청록 SAFE 칸으로 이동해야 살아남습니다."
       : activeBoss?.bossPhase === "telegraph"
         ? activeBoss.bossName + "의 " + bossAxisName(activeBoss.bossAxis) + " 줄 예고 — 붉은 선 밖으로 이동하세요."
         : activeBoss?.bossPhase === "vulnerable"
@@ -1715,7 +1753,7 @@
     }
     g.restore();
   }
-  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "") {
+  function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "", seals = 0) {
     let q = pos(x, y),
       s = size(),
       // The color communicates remaining hits, not the enemy's original maximum.
@@ -1746,6 +1784,10 @@
       let exposed = bossPhase === "vulnerable";
       let bossStatus = exposed
         ? "◆ CORE OPEN — STRIKE!"
+        : bossPhase === "sealed"
+          ? "✕ BLOOD SEAL · " + seals + " LEFT"
+          : bossPhase === "sanctuary"
+            ? "✦ SAFE CELL REQUIRED"
         : bossPhase === "recover"
           ? "✕ ARMOR RESETTING"
           : "✕ LOCKED — DODGE LINE";
@@ -1833,6 +1875,26 @@
         g.lineTo(q.x + span, q.y - span);
       }
       g.stroke();
+      g.restore();
+    }
+    if (activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell) {
+      let q = pos(activeBoss.safeCell.x, activeBoss.safeCell.y);
+      g.save();
+      g.globalAlpha = 0.7 + Math.sin(performance.now() / 120) * 0.2;
+      g.strokeStyle = "#53f0e4";
+      g.fillStyle = "rgba(83,240,228,.2)";
+      g.shadowColor = "#53f0e4";
+      g.shadowBlur = 24;
+      g.lineWidth = Math.max(3, s * 0.08);
+      g.beginPath();
+      g.arc(q.x, q.y, s * 0.42, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = "#efffff";
+      g.font = "700 " + s * 0.15 + "px monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText("SAFE", q.x, q.y);
       g.restore();
     }
     if (S.enemyTrail.length) {
@@ -2005,7 +2067,7 @@
     });
     if (S.phase === "captured") piece(S.player.x, S.player.y, S.player.piece);
     S.items.forEach(fieldItem);
-    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName));
+    S.enemies.forEach((e) => piece(e.x, e.y, e.type, true, e.hp || 1, e.maxHp || 1, e.risk, e.boss, e.bossPhase, e.bossName, e.seals));
     if (!["dead", "captured"].includes(S.phase)) piece(S.player.x, S.player.y, S.player.piece);
     if (S.phase === "dead") {
       let q = pos(S.player.x, S.player.y),
@@ -2183,6 +2245,8 @@
         ).length,
         activeBoss = boss(),
         bossStrike = activeBoss?.bossPhase === "telegraph" && bossLineThreat(activeBoss, landing),
+        sanctuarySafe = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCell && landing.x === activeBoss.safeCell.x && landing.y === activeBoss.safeCell.y,
+        sanctuaryFail = activeBoss?.bossPhase === "sanctuary" && !sanctuarySafe,
         durableMajor = targets.some(
           (e) => !e.boss && (e.hp || 1) > 1 && ["queen", "rook", "bishop"].includes(e.type),
         ),
@@ -2190,7 +2254,7 @@
           ? durableMajor
             ? -2400
             : 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
-          : 420 - nearest * 24 - enemyStrike * 5000 - (bossStrike ? 9000 : 0);
+          : 420 - nearest * 24 - enemyStrike * 5000 - (bossStrike ? 9000 : 0) - (sanctuaryFail ? 12000 : 0) + (sanctuarySafe ? 9000 : 0);
       if (targets.some((e) => e.boss && e.bossPhase === "vulnerable")) score += 5000;
       if (exit && !targets.length) score -= 80;
       // A little noise prevents identical boards from producing a rigid loop.
@@ -2229,9 +2293,9 @@
           : kind === "boss"
             ? Object.entries(BOSS_TYPES).map(([id, data]) => ({
                 id,
-                icon: glyph[id],
+                icon: glyph[data.piece || id],
                 name: data.name,
-                desc: id === "rook" ? "가로·세로 관통 예고" : id === "bishop" ? "대각선 관통 예고" : "8방향 관통 예고",
+                desc: id === "rook" ? "가로·세로 관통 예고" : id === "bishop" ? "대각선 관통 예고" : id === "queen" ? "8방향 관통 예고" : id === "bloodQueen" ? "잡몹 4기 처치로 봉인 해제" : "SAFE 칸 도달로 생존",
               }))
             : TRAITS;
     ui.devPickTitle.textContent = kind === "piece" ? "기물을 즉시 변경" : kind === "boss" ? "소환할 보스를 선택하세요" : "특성을 즉시 추가";
