@@ -2155,8 +2155,13 @@
         rookStrike =
           ironRook?.bossPhase === "telegraph" &&
           (ironRook.bossAxis === "row" ? landing.y === ironRook.y : landing.x === ironRook.x),
+        durableMajor = targets.some(
+          (e) => !e.boss && (e.hp || 1) > 1 && ["queen", "rook", "bishop"].includes(e.type),
+        ),
         score = targets.length
-          ? 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
+          ? durableMajor
+            ? -2400
+            : 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
           : 420 - nearest * 24 - enemyStrike * 5000 - (rookStrike ? 9000 : 0);
       if (targets.some((e) => e.boss && e.bossPhase === "vulnerable")) score += 5000;
       if (exit && !targets.length) score -= 80;
