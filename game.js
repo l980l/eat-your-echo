@@ -39,6 +39,7 @@
       bgmVolumeValue: $("#bgmVolumeValue"),
       sfxVolumeRange: $("#sfxVolumeRange"),
       sfxVolumeValue: $("#sfxVolumeValue"),
+      offscreenIndicatorToggle: $("#offscreenIndicatorToggle"),
       combo: $("#comboToast"),
       ranking: $("#rankingScreen"),
       rankingButton: $("#rankingButton"),
@@ -118,6 +119,7 @@
       upgradeOptions: [],
       upgradeMode: "",
       riskBeats: 0,
+      showOffscreenIndicators: true,
     };
   let W = 0,
     H = 0,
@@ -443,6 +445,11 @@
     ui[bus + "VolumeRange"].value = Math.round(slider);
     ui[bus + "VolumeValue"].textContent = Math.round(slider) + "%";
     if (audio[bus]) audio[bus].gain.setTargetAtTime(audio[bus + "Volume"], audio.ctx.currentTime, 0.025);
+  }
+  function setOffscreenIndicators(enabled) {
+    S.showOffscreenIndicators = enabled;
+    localStorage.setItem("its-my-turn-offscreen-indicators-v1", enabled ? "1" : "0");
+    ui.offscreenIndicatorToggle.checked = enabled;
   }
   function audioReady() {
     if (!window.AudioContext && !window.webkitAudioContext) return null;
@@ -1880,6 +1887,7 @@
       .filter(Boolean);
   }
   function edgeEnemyTargets() {
+    if (!S.showOffscreenIndicators) return [];
     let margin = 42,
       candidates = S.enemies
         .map((e) => {
@@ -2561,9 +2569,11 @@
   );
   setBusVolume("bgm", Math.round(audio.bgmVolume / 0.05));
   setBusVolume("sfx", Math.round(audio.sfxVolume / 0.05));
+  setOffscreenIndicators(localStorage.getItem("its-my-turn-offscreen-indicators-v1") !== "0");
   ui.soundToggle.addEventListener("click", () => ui.soundPanel.classList.toggle("hidden"));
   ui.bgmVolumeRange.addEventListener("input", (e) => setBusVolume("bgm", Number(e.target.value)));
   ui.sfxVolumeRange.addEventListener("input", (e) => setBusVolume("sfx", Number(e.target.value)));
+  ui.offscreenIndicatorToggle.addEventListener("change", (e) => setOffscreenIndicators(e.target.checked));
   reset();
   requestAnimationFrame(tick);
 })();

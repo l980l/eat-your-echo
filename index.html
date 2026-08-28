@@ -243,6 +243,8 @@
       width: 30px;
       text-align: right;
     }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #adb3d0; font-size: 10px; }
+    .setting-row input { width: auto; accent-color: #53f0e4; }
     .tutorial-panel { max-width: 560px; text-align: left; }
     .tutorial-step { margin: 0 0 10px; color: #53f0e4; font: 700 11px monospace; letter-spacing: .2em; }
     .tutorial-panel h2 { margin-bottom: 13px; }
@@ -591,15 +593,16 @@
         ><button id="devAuto">[8] AUTO OFF</button>
       </div>
       <div class="sound-control">
-        <button id="soundToggle" aria-label="사운드 설정">♫</button
+        <button id="soundToggle" aria-label="게임 설정">⚙</button
         ><label id="soundPanel" class="hidden"
-          ><span>VOLUME MIX</span>
+          ><span>GAME SETTINGS</span>
           <div class="sound-row"><span>BGM</span><input id="bgmVolumeRange" type="range" min="0" max="100" value="100" /><output id="bgmVolumeValue">100%</output></div>
-          <div class="sound-row"><span>SFX</span><input id="sfxVolumeRange" type="range" min="0" max="100" value="100" /><output id="sfxVolumeValue">100%</output></div></label
+          <div class="sound-row"><span>SFX</span><input id="sfxVolumeRange" type="range" min="0" max="100" value="100" /><output id="sfxVolumeValue">100%</output></div>
+          <div class="setting-row"><span>OFFSCREEN ICONS</span><input id="offscreenIndicatorToggle" type="checkbox" checked aria-label="화면 밖 적 아이콘 표시" /></div></label
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.55</b> · 2026.08.28</p>
+        <p class="build-version">BUILD <b>v0.10.56</b> · 2026.08.28</p>
         <label class="dev-toggle start-dev"
           ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
         ><nav class="start-menu" aria-label="시작 메뉴">
@@ -710,6 +713,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.55"></script>
+    <script src="game.js?v=v0.10.56"></script>
   </body>
 </html>
