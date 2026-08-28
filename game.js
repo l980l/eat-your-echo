@@ -634,6 +634,22 @@
       desc: "3적 턴마다 첫 비처치 이동 후 한 번 더 이동",
     },
   ];
+  const TRAIT_SVG = {
+    shockwave: '<path d="M32 5l5 18 18 5-18 5-5 18-5-18-18-5 18-5z"/><circle cx="32" cy="28" r="8"/>',
+    diagonalBurst: '<path d="M12 48L48 12M17 20l-5-8M25 17l-2-10M44 52l8 5M47 44l10 2"/><path d="M32 22l4 6 7 1-5 5 1 7-7-3-7 3 1-7-5-5 7-1z"/>',
+    longStride: '<path d="M7 32h50M7 32l10-10M7 32l10 10M57 32L47 22M57 32L47 42"/><path d="M22 21h20M22 43h20" opacity=".45"/>',
+    royalStep: '<path d="M13 47h38M17 47l4-24 11 10 11-10 4 24zM18 18l7 8 7-14 7 14 7-8"/><circle cx="18" cy="18" r="2"/><circle cx="32" cy="10" r="2"/><circle cx="46" cy="18" r="2"/>',
+    magnet: '<path d="M17 16v15a15 15 0 0030 0V16M17 16h9v11M47 16h-9v11"/><path d="M17 12h9M38 12h9"/><path d="M32 39l5-6M32 39l-5-6"/>',
+    chainSpark: '<path d="M35 5L15 34h15l-2 20 21-31H34z"/><path d="M10 48h10M44 48h10" opacity=".5"/>',
+    echoBlade: '<path d="M8 32h38M35 17l15 15-15 15M14 21h19M14 43h19"/><circle cx="10" cy="32" r="3"/>',
+    fork: '<path d="M18 48V30a14 14 0 0128 0v18M18 48h11M35 48h11M25 18l7-11 7 11"/><circle cx="18" cy="30" r="3"/><circle cx="46" cy="30" r="3"/>',
+    crossCheck: '<path d="M32 7v50M7 32h50"/><path d="M32 15l-5 6M32 15l5 6M32 49l-5-6M32 49l5-6M15 32l6-5M15 32l6 5M49 32l-6-5M49 32l-6 5"/>',
+    slipstream: '<path d="M7 22c8-12 16 12 24 0s16 12 26 0M7 36c8-12 16 12 24 0s16 12 26 0"/><path d="M45 15l12 7-12 7"/>',
+  };
+  function traitIcon(id) {
+    let body = TRAIT_SVG[id] || TRAIT_SVG.shockwave;
+    return '<svg class="trait-svg-icon" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
+  }
   function reset() {
     S.phase = "enemy";
     S.elapsed = S.flash = S.wave = S.kills = S.score = S.death = S.chain = S.riskBeats = 0;
@@ -1679,7 +1695,7 @@
         name = o.name;
         desc = o.desc;
       }
-      b.querySelector("b").textContent = icon;
+      b.querySelector("b").innerHTML = S.upgradeMode === "trait" ? traitIcon(o.id) : icon;
       b.querySelector("strong").textContent = name;
       b.querySelector("span").textContent = desc;
     });
@@ -2502,7 +2518,8 @@
       let b = document.createElement("button"),
         owned = kind === "trait" && S.player.traits.includes(o.id);
       b.disabled = owned;
-      b.innerHTML = "<b>" + o.icon + "</b><strong>" + (o.name || o.id.toUpperCase()) + "</strong><span>" + (owned ? "이미 보유함" : o.desc) + "</span>";
+      let icon = kind === "trait" ? traitIcon(o.id) : o.icon;
+      b.innerHTML = "<b>" + icon + "</b><strong>" + (o.name || o.id.toUpperCase()) + "</strong><span>" + (owned ? "이미 보유함" : o.desc) + "</span>";
       b.addEventListener("click", () => {
         let p = S.player;
         if (kind === "piece") {
