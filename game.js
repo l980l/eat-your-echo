@@ -2775,6 +2775,19 @@
     }
   }
   c.addEventListener("pointerdown", tap);
+  document.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    },
+    { passive: false },
+  );
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && ["+", "=", "-", "0"].includes(e.key)) e.preventDefault();
+  });
+  ["gesturestart", "gesturechange", "gestureend"].forEach((type) =>
+    document.addEventListener(type, (e) => e.preventDefault(), { passive: false }),
+  );
   $("#startButton").addEventListener("click", () => {
     if (localStorage.getItem("its-my-turn-tutorial-seen")) beginRun();
     else openTutorial(true);
