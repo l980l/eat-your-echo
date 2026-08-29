@@ -1426,7 +1426,15 @@
   }
   function projectedEnemyCapture(target) {
     if (S.grace > 0 || S.invincibleBeats > 0) return false;
-    let state = S.enemies.map((enemy) => ({ ...enemy })),
+    let activeBoss = boss(),
+      // recover/vulnerable bosses relocate before ordinary enemies move. Keep
+      // their future square unknown rather than treating their old square as
+      // a wall; this deliberately overestimates danger and prevents a queen
+      // or rook from being considered blocked by a boss that will move away.
+      bossWillRelocate = activeBoss && !["sealed", "sanctuary", "telegraph"].includes(activeBoss.bossPhase),
+      state = S.enemies
+        .filter((enemy) => !(enemy.boss && bossWillRelocate))
+        .map((enemy) => ({ ...enemy })),
       enemies = state.filter((enemy) => !enemy.boss),
       used = new Set();
     enemies
