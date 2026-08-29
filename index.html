@@ -445,11 +445,14 @@
       align-items: center;
       gap: 7px;
       max-width: calc(100vw - 36px);
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
     #startScreen .start-dev,
     #startScreen .start-pre {
       justify-content: flex-start;
+      box-sizing: border-box;
+      flex: 1 1 0;
+      min-width: 0;
       margin: 0;
       padding: 7px 9px;
       border: 1px solid #ffd16688;
@@ -687,11 +690,11 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.92</b> · 2026.08.29</p>
+        <p class="build-version">BUILD <b>v0.10.93</b> · 2026.08.29</p>
         <div class="mode-toggles">
           <label class="dev-toggle start-dev"
-            ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
-          ><button class="dev-toggle start-pre" id="preModeButton" type="button">PRE MODE · EXPERIMENTAL</button>
+            ><input id="devToggle" type="checkbox" />DEV MODE</label
+          ><button class="dev-toggle start-pre" id="preModeButton" type="button">PRE MODE</button>
         </div>
         <nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
@@ -812,6 +815,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.92"></script>
+    <script src="game.js?v=v0.10.93"></script>
   </body>
 </html>
