@@ -1395,6 +1395,57 @@
       opts.sort((a, b) => dist(a, p) - dist(b, p))[0] || { x: e.x, y: e.y }
     );
   }
+  // A side-effect-free copy of toward(). Auto play uses this only when it
+  // chooses a move, so it can evaluate the same sequential enemy movement
+  // that enemyBeat() will execute without touching the live board.
+  function projectedToward(e, target, enemies) {
+    let occupied = new Set(enemies.filter((other) => other !== e).map((other) => K(other.x, other.y))),
+      options = [],
+      king = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]],
+      slide = (directions) => {
+        for (let [dx, dy] of directions) {
+          for (let step = 1; step <= 3; step++) {
+            let cell = { x: e.x + dx * step, y: e.y + dy * step };
+            if (occupied.has(K(cell.x, cell.y)) || isWall(cell.x, cell.y)) break;
+            options.push(cell);
+          }
+        }
+      };
+    if (e.type === "knight")
+      options = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]
+        .map(([x, y]) => ({ x: e.x + x, y: e.y + y }))
+        .filter((cell) => !isWall(cell.x, cell.y));
+    else if (e.type === "bishop") slide([[1, 1], [1, -1], [-1, 1], [-1, -1]]);
+    else if (e.type === "rook") slide([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+    else if (e.type === "queen") slide(king);
+    else
+      options = king
+        .map(([x, y]) => ({ x: e.x + x, y: e.y + y }))
+        .filter((cell) => !occupied.has(K(cell.x, cell.y)) && !isWall(cell.x, cell.y));
+    return options.sort((a, b) => dist(a, target) - dist(b, target))[0] || { x: e.x, y: e.y };
+  }
+  function projectedEnemyCapture(target) {
+    if (S.grace > 0 || S.invincibleBeats > 0) return false;
+    let state = S.enemies.map((enemy) => ({ ...enemy })),
+      enemies = state.filter((enemy) => !enemy.boss),
+      used = new Set();
+    enemies
+      .sort((a, b) => dist(a, target) - dist(b, target))
+      .forEach((enemy) => {
+        if (used.has("CAPTURE")) return;
+        let next = projectedToward(enemy, target, state);
+        if (next.x === target.x && next.y === target.y) {
+          used.add("CAPTURE");
+          return;
+        }
+        if (!used.has(K(next.x, next.y))) {
+          enemy.x = next.x;
+          enemy.y = next.y;
+          used.add(K(next.x, next.y));
+        }
+      });
+    return used.has("CAPTURE");
+  }
   function enemyBeat() {
     rememberRewind("ENEMY TURN");
     S.wave++;
@@ -2759,12 +2810,8 @@
         ),
         remaining = S.enemies.filter((e) => !targets.includes(e) || (e.hp || 1) > 1),
         nearest = Math.min(...remaining.map((e) => Math.abs(e.x - landing.x) + Math.abs(e.y - landing.y)), 99),
-        enemyStrike = remaining.filter(
-          (e) =>
-            !e.boss &&
-            toward(e, landing).x === landing.x &&
-            toward(e, landing).y === landing.y,
-        ).length,
+        keepsTurn = targets.length > 0,
+        enemyStrike = keepsTurn ? false : projectedEnemyCapture(landing),
         activeBoss = boss(),
         bossStrike = activeBoss?.bossPhase === "telegraph" && bossLineThreat(activeBoss, landing),
         sanctuarySafe = activeBoss?.bossPhase === "sanctuary" && activeBoss.safeCells?.some((cell) => landing.x === cell.x && landing.y === cell.y),
@@ -2776,14 +2823,17 @@
           ? durableMajor
             ? -2400
             : 1800 + targets.length * 250 - Math.max(...targets.map((e) => e.hp || 1)) * 35
-          : 420 - nearest * 24 - enemyStrike * 5000 - (bossStrike ? 9000 : 0) - (sanctuaryFail ? 12000 : 0) + (sanctuarySafe ? 9000 : 0);
+          : 420 - nearest * 24 - (enemyStrike ? 5000 : 0) - (bossStrike ? 9000 : 0) - (sanctuaryFail ? 12000 : 0) + (sanctuarySafe ? 9000 : 0),
+        lethal = (enemyStrike || bossStrike || sanctuaryFail) && !keepsTurn;
       if (targets.some((e) => e.boss && e.bossPhase === "vulnerable")) score += 5000;
       if (exit && !targets.length) score -= 80;
       // A little noise prevents identical boards from producing a rigid loop.
-      return { m, score: score + Math.random() * 12 };
+      return { m, score: score + Math.random() * 12, lethal };
     });
-    candidates.sort((a, b) => b.score - a.score);
-    playerMove(candidates[0].m);
+    let safeCandidates = candidates.filter((candidate) => !candidate.lethal),
+      choices = safeCandidates.length ? safeCandidates : candidates;
+    choices.sort((a, b) => b.score - a.score);
+    playerMove(choices[0].m);
   }
   function devAuto() {
     if (!S.running || ["upgrade", "dead", "devpick"].includes(S.phase)) return;
