@@ -1984,8 +1984,11 @@
     // Persist the scale selected for the current move set through the move
     // animation; it is refreshed only when the next move set is generated.
     if (!matchMedia("(max-width:560px)").matches || !reach) return base;
-    let fitted = Math.min(W / (reach.x * 2 + 1.15), H / (reach.y * 2 + 1.15));
-    return Math.max(base * 0.7, Math.min(base, fitted));
+    // Keep every currently selectable square inside the practical mobile
+    // viewport. Long Stride can stack with field/terrain range boosts, so a
+    // 70% floor leaves edge moves hidden; 30% is the intentional hard floor.
+    let fitted = Math.min((W - 28) / (reach.x * 2 + 1.35), (H - 156) / (reach.y * 2 + 1.35));
+    return Math.max(base * 0.3, Math.min(base, fitted));
   }
   function pos(x, y) {
     let s = size();
