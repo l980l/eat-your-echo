@@ -69,8 +69,10 @@ Deno.serve(async (request) => {
   if (runToken !== await tokenFor(run.id, run.created_at)) return reply(origin, { error: "Invalid run token" }, 403);
 
   const seconds = Math.max(0, (Date.now() - new Date(run.created_at).getTime()) / 1000);
-  // Generous enough for strong chain play; prevents instant forged million-point posts.
-  const maxScore = Math.max(5000, Math.floor(seconds * 360));
+  // A fast run advances an enemy turn every 0.45s, and boss/chain scoring can spike
+  // sharply. Keep the check high enough for legitimate quick runs while still making
+  // an instant forged million-point post impossible.
+  const maxScore = Math.max(5000, Math.floor(seconds * 1500));
   if ((score as number) > maxScore) return reply(origin, { error: "Score exceeds this run's verified time limit" }, 422);
 
   const { error: insertError } = await admin.from("leaderboard").insert({ name: (name as string).trim(), score, message: String(message).trim() });

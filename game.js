@@ -511,8 +511,17 @@
       ui.scoreSubmit.classList.add("hidden");
       ui.scoreStatus.textContent = "기록을 남겼습니다! GLOBAL RANKING에서 확인하세요.";
       loadLeaderboard().catch(() => {});
-    } catch (_) {
-      ui.scoreStatus.textContent = "기록 등록에 실패했습니다. 잠시 후 다시 시도해주세요.";
+    } catch (error) {
+      let reason = error instanceof Error ? error.message : "";
+      if (reason.includes("verified time limit")) {
+        ui.scoreStatus.textContent = "너무 빠른 플레이로 점수 검증 한도를 넘었습니다. 잠시 뒤 다시 시도하거나 다음 판에서 등록해주세요.";
+      } else if (reason.includes("expired") || reason.includes("already")) {
+        ui.scoreStatus.textContent = "이 게임 기록의 제출 시간이 만료됐습니다. 새 게임에서 다시 도전해주세요.";
+      } else if (reason.includes("not verified") || reason.includes("run token")) {
+        ui.scoreStatus.textContent = "게임 기록 검증에 실패했습니다. 새 게임에서 다시 도전해주세요.";
+      } else {
+        ui.scoreStatus.textContent = "기록 등록에 실패했습니다. 잠시 후 다시 시도해주세요.";
+      }
     } finally {
       ui.scoreButton.disabled = false;
     }
