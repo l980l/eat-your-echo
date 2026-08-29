@@ -2054,7 +2054,8 @@
             cacheG.strokeStyle = "#66609422";
             cacheG.strokeRect(qx - s / 2, qy - s / 2, s, s);
           }
-        gridCache = { key, canvas };
+        gridCache.key = key;
+        gridCache.canvas = canvas;
       }
       g.drawImage(gridCache.canvas, 0, 0, W, H);
       return;
