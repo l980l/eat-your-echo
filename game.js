@@ -28,7 +28,11 @@
       resultRank: $("#resultRank"),
       devBar: $("#devBar"),
       devToggle: $("#devToggle"),
-      preToggle: $("#preToggle"),
+      preModeButton: $("#preModeButton"),
+      preModeScreen: $("#preModeScreen"),
+      preLegacyButton: $("#preLegacyButton"),
+      preOptimizedButton: $("#preOptimizedButton"),
+      preModeClose: $("#preModeClose"),
       devPassword: $("#devPasswordScreen"),
       devPasswordInput: $("#devPasswordInput"),
       devPasswordStatus: $("#devPasswordStatus"),
@@ -107,10 +111,14 @@
     // the fixed SVG frame centers it exactly like canvas textAlign="center".
     preSvgOffsets = { pawn: 98.5, knight: 91, bishop: 0, rook: 93, queen: 36, king: 75.5 },
     preSvgImages = new Map(),
+    optimizedSprites = new Map(),
+    gridCache = { key: "", canvas: null },
     S = {
       running: false,
       dev: false,
       pre: false,
+      optimized: false,
+      lastDraw: 0,
       devSpeed: 1,
       autoPlay: false,
       autoElapsed: 0,
@@ -155,7 +163,8 @@
     last = 0;
   const DEV_PASSWORD_HASH = "c4876de490dcf38b74d6c0d4f120cf01126c3d6a3a49b93ec81caae38ea1497e";
   let devUnlocked = sessionStorage.getItem("its-my-turn-dev-unlocked") === "1",
-    passwordTarget = "dev";
+    passwordTarget = "dev",
+    preMode = "normal";
   const K = (x, y) => x + "," + y,
     dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
     COMBO_COLORS = ["#ff4d6d", "#ff9f43", "#ffd166", "#6ee7b7", "#53f0e4", "#758bff", "#d66efd"],
@@ -390,12 +399,31 @@
   function beginRun() {
     reset();
     S.dev = ui.devToggle.checked && devUnlocked;
-    S.pre = ui.preToggle.checked && devUnlocked;
+    S.pre = preMode === "legacy";
+    S.optimized = preMode === "optimized";
+    S.lastDraw = 0;
     ui.devBar.classList.toggle("hidden", !S.dev);
     S.running = true;
     startVerifiedRun();
     startBgm();
     ui.start.classList.add("hidden");
+  }
+  function openPreModePicker() {
+    if (!devUnlocked) {
+      openDevPassword("pre");
+      return;
+    }
+    ui.preModeScreen.classList.remove("hidden");
+  }
+  function choosePreMode(mode) {
+    preMode = mode;
+    let labels = {
+      legacy: "PRE MODE · LEGACY PIECES",
+      optimized: "PRE MODE · OPTIMIZED RENDERER",
+    };
+    ui.preModeButton.textContent = labels[mode];
+    ui.preModeButton.classList.add("active");
+    ui.preModeScreen.classList.add("hidden");
   }
   function closeTutorial(startRun = false) {
     ui.tutorial.classList.add("hidden");
@@ -1981,11 +2009,53 @@
       preSvgImages.set(key, image);
     }
     if (image.complete && image.naturalWidth) {
-      g.drawImage(image, x - scale / 2, y - scale / 2, scale, scale);
+      if (S.optimized) {
+        let rasterScale = Math.round(scale * 10) / 10,
+          spriteKey = key + "|" + rasterScale + "|" + D,
+          sprite = optimizedSprites.get(spriteKey);
+        if (!sprite) {
+          sprite = document.createElement("canvas");
+          sprite.width = Math.ceil(rasterScale * D);
+          sprite.height = Math.ceil(rasterScale * D);
+          let spriteG = sprite.getContext("2d");
+          spriteG.imageSmoothingEnabled = true;
+          spriteG.imageSmoothingQuality = "high";
+          spriteG.drawImage(image, 0, 0, sprite.width, sprite.height);
+          optimizedSprites.set(spriteKey, sprite);
+        }
+        g.drawImage(sprite, x - scale / 2, y - scale / 2, scale, scale);
+      } else g.drawImage(image, x - scale / 2, y - scale / 2, scale, scale);
     } else {
       g.font = "700 " + scale * 0.72 + "px Georgia, serif";
       g.fillText(glyph[type] || glyph.pawn, x, y);
     }
+  }
+  function drawBoardGrid(s, cols, rows, cx, cy) {
+    let settled = S.optimized && S.player && Math.abs(S.camera.x - S.player.x) < 0.012 && Math.abs(S.camera.y - S.player.y) < 0.012;
+    if (settled) {
+      let key = [W, H, D, s.toFixed(2), S.player.x, S.player.y, cols, rows].join("|");
+      if (gridCache.key !== key) {
+        let canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(W * D);
+        canvas.height = Math.ceil(H * D);
+        let cacheG = canvas.getContext("2d");
+        cacheG.setTransform(D, 0, 0, D, 0, 0);
+        for (let y = cy - rows; y <= cy + rows; y++)
+          for (let x = cx - cols; x <= cx + cols; x++) {
+            let qx = W / 2 + (x - S.player.x) * s,
+              qy = H / 2 + (y - S.player.y) * s;
+            cacheG.fillStyle = (x + y) & 1 ? "#12142b" : "#0d1023";
+            cacheG.fillRect(qx - s / 2, qy - s / 2, s, s);
+            cacheG.strokeStyle = "#66609422";
+            cacheG.strokeRect(qx - s / 2, qy - s / 2, s, s);
+          }
+        gridCache = { key, canvas };
+      }
+      g.drawImage(gridCache.canvas, 0, 0, W, H);
+      return;
+    }
+    for (let y = cy - rows; y <= cy + rows; y++)
+      for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
   }
   function piece(x, y, t, enemy = false, hp = 1, maxHp = 1, risk = false, bossPiece = false, bossPhase = "", bossName = "", seals = 0, enraged = false) {
     let q = pos(x, y),
@@ -2119,8 +2189,7 @@
       rows = Math.ceil(H / s / 2) + 2,
       cx = Math.floor(S.camera.x),
       cy = Math.floor(S.camera.y);
-    for (let y = cy - rows; y <= cy + rows; y++)
-      for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
+    drawBoardGrid(s, cols, rows, cx, cy);
     snapshot.terrain.forEach(terrainTile);
     // Each snapshot preserves the movement that led into this board state.
     // Player paths stay solid cyan; every enemy move in the beat stays red and dashed.
@@ -2204,8 +2273,7 @@
       rows = Math.ceil(H / s / 2) + 2,
       cx = Math.floor(S.camera.x),
       cy = Math.floor(S.camera.y);
-    for (let y = cy - rows; y <= cy + rows; y++)
-      for (let x = cx - cols; x <= cx + cols; x++) cell(x, y, s);
+    drawBoardGrid(s, cols, rows, cx, cy);
     S.terrain.forEach(terrainTile);
     let activeBoss = boss();
     if (activeBoss?.bossPhase === "telegraph") {
@@ -2522,17 +2590,39 @@
       S.camera.x += (S.player.x - S.camera.x) * Math.min(1, dt * 8);
       S.camera.y += (S.player.y - S.camera.y) * Math.min(1, dt * 8);
       S.flash = Math.max(0, S.flash - dt * 1.8);
-      S.particles.forEach((p) => {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vx *= p.drag || 0.93;
-        p.vy *= p.drag || 0.93;
-        p.angle = (p.angle || 0) + (p.spin || 0) * dt;
-        p.life -= dt;
-      });
-      S.particles = S.particles.filter((p) => p.life > 0);
-      S.effects.forEach((f) => (f.life -= dt));
-      S.effects = S.effects.filter((f) => f.life > 0);
+      if (S.optimized) {
+        let particleCount = 0;
+        for (let i = 0; i < S.particles.length; i++) {
+          let p = S.particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vx *= p.drag || 0.93;
+          p.vy *= p.drag || 0.93;
+          p.angle = (p.angle || 0) + (p.spin || 0) * dt;
+          p.life -= dt;
+          if (p.life > 0) S.particles[particleCount++] = p;
+        }
+        S.particles.length = particleCount;
+        let effectCount = 0;
+        for (let i = 0; i < S.effects.length; i++) {
+          let effect = S.effects[i];
+          effect.life -= dt;
+          if (effect.life > 0) S.effects[effectCount++] = effect;
+        }
+        S.effects.length = effectCount;
+      } else {
+        S.particles.forEach((p) => {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vx *= p.drag || 0.93;
+          p.vy *= p.drag || 0.93;
+          p.angle = (p.angle || 0) + (p.spin || 0) * dt;
+          p.life -= dt;
+        });
+        S.particles = S.particles.filter((p) => p.life > 0);
+        S.effects.forEach((f) => (f.life -= dt));
+        S.effects = S.effects.filter((f) => f.life > 0);
+      }
       if (S.phase === "enemy") {
         S.elapsed += dt;
         let r = Math.min(1, S.elapsed / S.beat);
@@ -2583,7 +2673,20 @@
         }
       } else ui.meter.style.width = "100%";
     }
-    draw();
+    let idleOptimizedFrame =
+      S.optimized &&
+      S.running &&
+      S.phase === "player" &&
+      !S.autoPlay &&
+      !S.particles.length &&
+      !S.effects.length &&
+      S.flash <= 0 &&
+      Math.abs(S.camera.x - S.player.x) < 0.012 &&
+      Math.abs(S.camera.y - S.player.y) < 0.012;
+    if (!idleOptimizedFrame || now - S.lastDraw >= 1000 / 30) {
+      draw();
+      S.lastDraw = now;
+    }
     requestAnimationFrame(tick);
   }
   function tap(e) {
@@ -2767,7 +2870,7 @@
       }
       devUnlocked = true;
       sessionStorage.setItem("its-my-turn-dev-unlocked", "1");
-      if (passwordTarget === "pre") ui.preToggle.checked = true;
+      if (passwordTarget === "pre") openPreModePicker();
       else ui.devToggle.checked = true;
       closeDevPassword();
     } catch (_) {
@@ -2834,12 +2937,10 @@
       openDevPassword("dev");
     }
   });
-  ui.preToggle.addEventListener("change", () => {
-    if (ui.preToggle.checked && !devUnlocked) {
-      ui.preToggle.checked = false;
-      openDevPassword("pre");
-    }
-  });
+  ui.preModeButton.addEventListener("click", openPreModePicker);
+  ui.preLegacyButton.addEventListener("click", () => choosePreMode("legacy"));
+  ui.preOptimizedButton.addEventListener("click", () => choosePreMode("optimized"));
+  ui.preModeClose.addEventListener("click", () => ui.preModeScreen.classList.add("hidden"));
   ui.devPasswordSubmit.addEventListener("click", unlockDevPassword);
   ui.devPasswordCancel.addEventListener("click", closeDevPassword);
   ui.devPasswordInput.addEventListener("keydown", (e) => {

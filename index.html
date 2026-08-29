@@ -446,7 +446,16 @@
       color: #53f0e4;
       border-color: #53f0e488;
     }
-    #startScreen .start-pre input { accent-color: #53f0e4; }
+    #startScreen .start-pre { cursor: pointer; }
+    #startScreen .start-pre.active { background: #123137cc; box-shadow: 0 0 18px #53f0e455; }
+    .pre-mode-panel { max-width: 720px; }
+    .pre-mode-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .pre-mode-choice { min-height: 180px; margin: 0; padding: 22px 16px; color: #efffff; background: #121a38; box-shadow: none; text-align: left; }
+    .pre-mode-choice strong, .pre-mode-choice span { display: block; }
+    .pre-mode-choice strong { margin-bottom: 10px; color: #53f0e4; font: 700 18px monospace; letter-spacing: .06em; }
+    .pre-mode-choice span { color: #b9c5df; font-size: 13px; line-height: 1.55; }
+    .pre-mode-choice.legacy strong { color: #ffd166; }
+    @media (max-width: 560px) { .pre-mode-options { grid-template-columns: 1fr; } .pre-mode-choice { min-height: 0; padding: 17px 15px; } }
     #rewindControls {
       position: absolute;
       z-index: 4;
@@ -661,12 +670,11 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.85</b> · 2026.08.29</p>
+        <p class="build-version">BUILD <b>v0.10.86</b> · 2026.08.29</p>
         <div class="mode-toggles">
           <label class="dev-toggle start-dev"
             ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
-          ><label class="dev-toggle start-pre"
-            ><input id="preToggle" type="checkbox" />PRE MODE · LEGACY PIECES</label>
+          ><button class="dev-toggle start-pre" id="preModeButton" type="button">PRE MODE · EXPERIMENTAL</button>
         </div>
         <nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
@@ -674,6 +682,17 @@
           <button id="rankingButton">GLOBAL RANKING</button>
           <button id="tutorialButton">HOW TO PLAY</button>
         </nav>
+      </section>
+      <section class="overlay hidden" id="preModeScreen">
+        <div class="panel pre-mode-panel">
+          <p class="eyebrow">PRE MODE · EXPERIMENTAL</p>
+          <h2>렌더러를 선택하세요</h2>
+          <div class="pre-mode-options">
+            <button class="pre-mode-choice legacy" id="preLegacyButton"><strong>LEGACY PIECES</strong><span>기존 PRE 모드입니다.<br />유니코드 체스 말을 사용합니다.</span></button>
+            <button class="pre-mode-choice" id="preOptimizedButton"><strong>OPTIMIZED RENDERER</strong><span>SVG 스프라이트·정지 배경 캐시·유휴 프레임 절약을 적용합니다.<br />특히 iPhone용 실험 모드입니다.</span></button>
+          </div>
+          <div class="leaderboard-actions"><button class="secondary-button" id="preModeClose">취소</button></div>
+        </div>
       </section>
       <section class="overlay hidden" id="tutorialScreen">
         <div class="panel tutorial-panel">
@@ -776,6 +795,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.85"></script>
+    <script src="game.js?v=v0.10.86"></script>
   </body>
 </html>
