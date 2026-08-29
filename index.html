@@ -90,6 +90,21 @@
           500 10px "DM Mono",
           monospace;
       }
+      .dev-visibility {
+        position: absolute;
+        z-index: 6;
+        right: 18px;
+        bottom: 70px;
+        margin: 0;
+        padding: 7px 10px;
+        border-color: #ffd166;
+        background: #191b34;
+        color: #ffd166;
+        box-shadow: none;
+        font: 500 10px "DM Mono", monospace;
+        letter-spacing: .1em;
+      }
+      .dev-visibility.hidden { display: none; }
       .dev-toggle {
         display: flex;
         align-items: center;
@@ -189,16 +204,17 @@
       outline: none;
     }
     .dev-password-status { min-height: 20px; color: #ff8da5; font-size: 13px; }
-    @media (max-width: 560px) {
+      @media (max-width: 560px) {
       .devbar {
         left: 10px;
         bottom: 10px;
         gap: 4px;
       }
-      .devbar button {
-        padding: 7px 8px;
-        font-size: 9px;
-      }
+        .devbar button {
+          padding: 7px 8px;
+          font-size: 9px;
+        }
+        .dev-visibility { right: 10px; bottom: 62px; }
       .dev-options {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -660,6 +676,7 @@
         ><button id="devBoss">[7] BOSS</button>
         ><button id="devAuto">[8] AUTO OFF</button>
       </div>
+      <button class="dev-visibility hidden" id="devVisibilityToggle" type="button" aria-expanded="true">HIDE DEV TOOLS</button>
       <div class="sound-control">
         <button id="soundToggle" aria-label="게임 설정">⚙</button
         ><label id="soundPanel" class="hidden"
@@ -670,7 +687,7 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.86</b> · 2026.08.29</p>
+        <p class="build-version">BUILD <b>v0.10.87</b> · 2026.08.29</p>
         <div class="mode-toggles">
           <label class="dev-toggle start-dev"
             ><input id="devToggle" type="checkbox" />DEV MODE · TEST TOOLS</label
@@ -795,6 +812,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.86"></script>
+    <script src="game.js?v=v0.10.87"></script>
   </body>
 </html>

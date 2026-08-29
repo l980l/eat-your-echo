@@ -27,6 +27,7 @@
       result: $("#resultText"),
       resultRank: $("#resultRank"),
       devBar: $("#devBar"),
+      devVisibilityToggle: $("#devVisibilityToggle"),
       devToggle: $("#devToggle"),
       preModeButton: $("#preModeButton"),
       preModeScreen: $("#preModeScreen"),
@@ -343,6 +344,7 @@
     closeRanking();
     ui.over.classList.add("hidden");
     ui.devBar.classList.add("hidden");
+    ui.devVisibilityToggle.classList.add("hidden");
     ui.start.classList.remove("hidden");
   }
   const TUTORIAL_PAGES = [
@@ -403,6 +405,9 @@
     S.optimized = preMode === "optimized";
     S.lastDraw = 0;
     ui.devBar.classList.toggle("hidden", !S.dev);
+    ui.devVisibilityToggle.classList.toggle("hidden", !S.dev);
+    ui.devVisibilityToggle.textContent = "HIDE DEV TOOLS";
+    ui.devVisibilityToggle.setAttribute("aria-expanded", "true");
     S.running = true;
     startVerifiedRun();
     startBgm();
@@ -2786,6 +2791,12 @@
     ui.devAuto.textContent = "[8] AUTO " + (S.autoPlay ? "ON" : "OFF");
     ui.hint.textContent = S.autoPlay ? "DEV: 자동 플레이를 시작합니다." : "DEV: 자동 플레이를 멈췄습니다.";
   }
+  function toggleDevTools() {
+    if (!S.dev) return;
+    let hidden = ui.devBar.classList.toggle("hidden");
+    ui.devVisibilityToggle.textContent = hidden ? "SHOW DEV TOOLS" : "HIDE DEV TOOLS";
+    ui.devVisibilityToggle.setAttribute("aria-expanded", String(!hidden));
+  }
   function closeDevPick() {
     ui.devPick.classList.add("hidden");
     S.phase = S.devReturnPhase || "player";
@@ -2912,6 +2923,9 @@
     reset();
     ui.devSpeed.textContent = "[4] ×2 SPEED";
     ui.devBar.classList.toggle("hidden", !S.dev);
+    ui.devVisibilityToggle.classList.toggle("hidden", !S.dev);
+    ui.devVisibilityToggle.textContent = "HIDE DEV TOOLS";
+    ui.devVisibilityToggle.setAttribute("aria-expanded", "true");
     S.running = true;
     startBgm();
     ui.over.classList.add("hidden");
@@ -2954,6 +2968,7 @@
   $("#devTrait").addEventListener("click", () => openDevPick("trait"));
   $("#devBoss").addEventListener("click", () => openDevPick("boss"));
   $("#devAuto").addEventListener("click", devAuto);
+  ui.devVisibilityToggle.addEventListener("click", toggleDevTools);
   $("#devPickClose").addEventListener("click", closeDevPick);
   document.addEventListener("keydown", (e) => {
     if (!S.dev) return;
@@ -2966,7 +2981,7 @@
     if (k === "6") openDevPick("trait");
     if (k === "7") openDevPick("boss");
     if (k === "8") devAuto();
-    if (k === "d") ui.devBar.classList.toggle("hidden");
+    if (k === "d") toggleDevTools();
   });
   document.addEventListener(
     "click",
