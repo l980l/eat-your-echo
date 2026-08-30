@@ -426,7 +426,7 @@
       legacy: "PRE MODE · LEGACY PIECES",
       optimized: "PRE MODE · OPTIMIZED RENDERER",
     };
-    ui.preModeButton.textContent = "PRE MODE";
+    ui.preModeButton.lastChild.textContent = "PRE";
     ui.preModeButton.title = labels[mode];
     ui.preModeButton.setAttribute("aria-label", labels[mode]);
     ui.preModeButton.classList.add("active");

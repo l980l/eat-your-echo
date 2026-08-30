@@ -235,8 +235,12 @@
       color: #c6c9dc;
     }
     .sound-control button {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
       margin: 0;
-      padding: 8px 11px;
+      padding: 0;
       color: #53f0e4;
       background: #191b34;
       border-color: #53f0e4;
@@ -246,7 +250,7 @@
     .sound-control label {
       position: absolute;
       right: 0;
-      bottom: 43px;
+      bottom: 52px;
       display: grid;
       gap: 8px;
       width: 230px;
@@ -307,7 +311,7 @@
         bottom: 10px;
       }
       .sound-control label {
-        bottom: 40px;
+        bottom: 52px;
       }
       .tutorial-panel { width: min(91vw, 560px); padding: 25px 19px; }
       .tutorial-copy { min-height: 6.8em; font-size: 14px; }
@@ -449,7 +453,7 @@
     }
     #startScreen .start-dev,
     #startScreen .start-pre {
-      justify-content: flex-start;
+      justify-content: center;
       box-sizing: border-box;
       flex: 1 1 0;
       min-width: 0;
@@ -459,7 +463,22 @@
       background: #090a1888;
       color: #ffd166;
       font-size: 9px;
+      line-height: 1;
+      white-space: nowrap;
       backdrop-filter: blur(3px);
+    }
+    #startScreen .start-dev input,
+    #startScreen .start-pre .mode-toggle-check {
+      box-sizing: border-box;
+      flex: 0 0 16px;
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+    #startScreen .start-pre .mode-toggle-check {
+      border: 2px solid #a4a4a4;
+      border-radius: 3px;
+      background: #4d4d4d;
     }
     #startScreen .start-pre {
       color: #53f0e4;
@@ -690,11 +709,11 @@
         >
       </div>
       <section class="overlay" id="startScreen">
-        <p class="build-version">BUILD <b>v0.10.94</b> · 2026.08.30</p>
+        <p class="build-version">BUILD <b>v0.10.95</b> · 2026.08.30</p>
         <div class="mode-toggles">
           <label class="dev-toggle start-dev"
             ><input id="devToggle" type="checkbox" />DEV</label
-          ><button class="dev-toggle start-pre" id="preModeButton" type="button">PRE</button>
+          ><button class="dev-toggle start-pre" id="preModeButton" type="button"><span class="mode-toggle-check" aria-hidden="true"></span>PRE</button>
         </div>
         <nav class="start-menu" aria-label="시작 메뉴">
           <h1 class="start-title">IT'S MY TURN…<br />CHECK!</h1>
@@ -815,6 +834,6 @@
         </div>
       </section>
     </main>
-    <script src="game.js?v=v0.10.93"></script>
+    <script src="game.js?v=v0.10.95"></script>
   </body>
 </html>
