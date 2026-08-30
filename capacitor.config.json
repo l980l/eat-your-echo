@@ -1,0 +1,6 @@
+{
+  "appId": "com.kimkwanhyeon.itsmyturncheck",
+  "appName": "It's My Turn... Check!",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

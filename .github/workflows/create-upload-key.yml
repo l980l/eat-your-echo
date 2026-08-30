@@ -1,0 +1,39 @@
+name: Create Android upload key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create-key:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify required secrets
+        run: |
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_PASSWORD"
+      - name: Create upload key
+        run: |
+          keytool -genkeypair -v \
+            -keystore upload-keystore.jks \
+            -alias "$ANDROID_KEY_ALIAS" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -keypass "$ANDROID_KEY_PASSWORD" \
+            -dname "CN=Kim Kwanhyeon, OU=Game, O=Kim Kwanhyeon, L=Seoul, ST=Seoul, C=KR"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-upload-key-backup
+          path: upload-keystore.jks
+          retention-days: 1

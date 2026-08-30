@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">It\'s My Turn... Check!</string>
+    <string name="title_activity_main">It\'s My Turn... Check!</string>
+    <string name="package_name">com.kimkwanhyeon.itsmyturncheck</string>
+    <string name="custom_url_scheme">com.kimkwanhyeon.itsmyturncheck</string>
+</resources>

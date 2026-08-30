@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+android/app/upload-keystore.jks

@@ -1,0 +1,49 @@
+name: Build Android release AAB
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version shown to players, for example 1.0.0'
+        required: true
+        default: '1.0.0'
+      version_code:
+        description: 'Unique increasing Play version code, for example 1'
+        required: true
+        default: '1'
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_NAME: ${{ inputs.version_name }}
+      VERSION_CODE: ${{ inputs.version_code }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: npm ci
+      - run: npm run sync:android
+      - run: node scripts/setup-android-signing.mjs
+      - run: ./gradlew bundleRelease
+        working-directory: android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: its-my-turn-check-${{ inputs.version_name }}-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30

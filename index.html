@@ -11,9 +11,11 @@
     <link rel="preload" as="image" href="assets/its-my-turn-check-desktop-art.webp" media="(min-width: 561px)" type="image/webp" />
     <link rel="preload" as="image" href="assets/its-my-turn-check-desktop-art.webp" media="(max-width: 560px)" type="image/webp" />
     <link rel="stylesheet" href="style.css?v=zoom-lock" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- Kept local so the Android build is fully playable without a network connection. -->
+    <style>
+      @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf") format("truetype"); font-display: swap; }
+      @font-face { font-family: "Gowun Batang"; src: url("assets/fonts/GowunBatang-Regular.ttf") format("truetype"); font-display: swap; }
+    </style>
     <style>
       #app {
         position: fixed;
