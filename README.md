@@ -2,6 +2,8 @@
 
 > One move. They advance. Check the board.
 
+> **OpenAI Game Builders Seoul 출품작** — 이 게임으로 본선에 진출해 발표를 진행했습니다.
+
 It’s My Turn… Check!는 다가오는 적 기물을 돌파하는 턴 기반 체스 생존 게임입니다. 적을 처치하면 추가 이동을 얻고, 랜덤 승진과 특성 조합으로 자신만의 기물을 만듭니다.
 
 Play: https://l980l.github.io/its-my-turn-check/
